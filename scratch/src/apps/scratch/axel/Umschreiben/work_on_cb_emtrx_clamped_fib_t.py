@@ -37,7 +37,8 @@ def H(x):
 class CBEMClampedFiber(RF):
     '''
     Crack bridged by a fiber with constant
-    frictional interface to the elastic matrix; clamped fiber end
+    frictional interface to the elastic matrix; clamped fiber end;
+    Gives tension.
     '''
 
     implements(IRF)
@@ -79,8 +80,6 @@ class CBEMClampedFiber(RF):
     Lr = Float(.5, auto_set=False, enter_set=True, input=True,
               distr=['uniform'], desc='embedded length - right')
 
-    Nf = Float(1000., auto_set=False, enter_set=True, input=True,
-              desc='number of parallel fibers', distr=['uniform'])
 
     w = Float(auto_set=False, enter_set=True, input=True,
                distr=['uniform'], desc='crack width',
@@ -119,31 +118,34 @@ class CBEMClampedFiber(RF):
         P0 = t1 * ((c ** 2 + t2) ** 0.5 - c)
         return P0
 
-    def pullout(self, u, l, T, Kr, Km, Lmin, Lmax):
+    def pullout(self, w, l, T, Kr, Km, Lmin, Lmax):
         #Phase B : Debonding of shorter side is finished
         Ec = Kr + Km
         c = T * Kr * Lmax + T * Ec * (Lmin + l)
         t1 = Ec * Kr / Km ** 2.
-        t2 = 2. * Km ** 2. * u * T
+        t2 = 2. * Km ** 2. * w * T
         t3 = (Km ** 2.) * (Lmin ** 2.) * (T ** 2.)
         P1 = t1 * (sqrt(c ** 2. + t2 + t3) - c)
         return P1
 
-    def linel(self, u, l, T, Kr, Km, Lmax, Lmin):
-        #Phase C: Both sides debonded
+    def linel(self, w, l, T, Kr, Km, Lmax, Lmin):
+        #Phase C: Both sides debonded- linear elastic behavior.
         t1 = Lmax ** 2. + Lmin ** 2.
-        P2 = 0.5 * (2. * u + T * t1) * Kr / (Lmax + l + Lmin)
+        P2 = 0.5 * (2. * w + T * t1) * Kr / (Lmax + l + Lmin)
         return P2
 
     def __call__(self, w, tau, l, E_r, E_m, theta, xi, phi, Ll, Lr, V_f, r):
+        #assigning short and long embedded length
         Lmin = minimum(Ll, Lr)
         Lmax = maximum(Ll, Lr)
         
         Lmin = maximum(Lmin - l / 2., 0.)
         Lmax = maximum(Lmax - l / 2., 0.)
 
+        #maximum condition for free length
         l = minimum(l / 2., Lr) + minimum(l / 2., Ll)
-
+        
+        #defining variables
         l = l * (1 + theta)
         w = w - theta * l
         w = H(w) * w
@@ -178,33 +180,12 @@ class CBEMClampedFiber(RF):
         q = q * H(Kr * xi - q)
    
         return q
-'''
-class CBEMClampedFiberSP(CBEMClampedFiber):
-    
-    #stress profile for a crack bridged by a short fiber with constant
-    #frictional interface to the matrix; clamped fiber end
-    
 
-    x = Float(0.0, auto_set=False, enter_set=True, input=True,
-              distr=['uniform'], desc='distance from crack')
 
-    x_label = Str('position [mm]')
-    y_label = Str('force [N]')
 
-    C_code = Str('')
 
-    def __call__(self, w, x, tau, l, E_r, E_m, E_c, theta, xi, phi, Ll, Lr, V_f, r):
-        
-        T = 2 * tau / (r * E_r)
-        Km = (1 - V_f) * E_m
-        Kr = V_f * E_r
-        q = super(CBEMClampedFiberSP, self).__call__(w, t, l, Ef, Em, theta, xi, phi, Ll, Lr, Vf, r)
-        q_x = q * H(l / 2. - abs(x)) + (q - T * (abs(x) - l / 2.)) * H(abs(x) - l / 2.)
-        q_const = q * Kr / (Km + Kr)
-        q_x = maximum(q_x, q_const)
-        #q_x = q_x * H(x + Ll) * H (Lr - x)
-        return q_x
-'''
+
+
 if __name__ == '__main__':
     t = 0.1
     Ef = 72e3
@@ -221,20 +202,9 @@ if __name__ == '__main__':
     def Pw(w):
         P = CBEMClampedFiber()
         q = P(w, t, l, Ef, Em, theta, xi, phi, Ll, Lr, Vf, r) 
-        plt.plot(w, q , lw=2, ls='-', color='black', label='CB_emtrx_sigma')
+        plt.plot(w, q , lw=2, ls='-', color='black', label='CB_emtrx')
         plt.show()
-    '''    
-    def SP():
-        plt.figure()
-        cbcsp = CBEMClampedFiberSP()
-        x = linspace(-100, 40, 300)
-        q = cbcsp(w, t, l, Ef, Em, theta, xi, phi, Ll, Lr, Vf, r) 
-        plt.plot(x, q, lw=2, color='black', label='force along filament')
-        plt.xticks(fontsize=14)
-        plt.yticks(fontsize=14)
-        plt.legend(loc='best')
-        plt.ylim(0, 60)
-    '''
+
     w = linspace(0, 1, 300)
    
     Pw(w)
