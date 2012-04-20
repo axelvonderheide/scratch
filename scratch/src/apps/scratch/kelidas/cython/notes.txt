@@ -1,0 +1,61 @@
+
+
+install Cython
+
+run
+$ python setup.py build_ext --inplace
+(this will generate .so (.dll in win) file)
+
+ipython
+>> import ext_name
+
+##########
+# hello
+##########
+import hello
+
+##########
+# convolve
+##########
+--- testing functions
+import convolve_py
+import convolve1
+import convolve2
+import convolve3
+import convolve4
+import numpy as np
+N = 100
+f = np.arange(N*N, dtype=np.int).reshape((N,N))
+g = np.arange(81, dtype=np.int).reshape((9, 9))
+%timeit -n2 -r3 convolve_py.naive_convolve(f, g)
+%timeit -n2 -r3 convolve1.naive_convolve(f, g)
+%timeit -n2 -r3 convolve2.naive_convolve(f, g)
+%timeit -n2 -r3 convolve3.naive_convolve(f, g)
+%timeit -n2 -r3 convolve4.naive_convolve(f, g)
+
+
+##########
+# spirrid
+##########
+import spirrid
+
+##########
+# spirrid_2
+##########
+import spirrid
+-- copy run.py file content to console win or run
+>> %run run.py
+
+##########
+# spirrid_c
+##########
+--- Comparison of Cython and C
+import spirrid
+-- copy run.py file content to console win or run
+>> %run run.py
+
+
+
+
+
+

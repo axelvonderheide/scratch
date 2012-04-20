@@ -1,0 +1,28 @@
+\documentclass[paper=a4, fleqn]{scrartcl}
+\usepackage[latin1]{inputenc}
+\usepackage{dsfont}
+\usepackage{color}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{comment}
+\usepackage{mathptmx}
+\usepackage[scaled=.90]{helvet}
+\usepackage{eucal}
+\usepackage{palatino}
+\usepackage{listings}
+\usepackage{textcomp}
+
+
+\begin{document}
+
+\title{test_latex}
+
+\maketitle
+
+\section{Section 1 }
+
+height =$ 10.0 $
+
+width =$ 15.0$
+
+\end{document}

@@ -1,0 +1,17 @@
+
+u_max = 12e-5m
+15 steps - no scaling : Gf = 0.001117, f_t = 2.8968 MPa, E = 34000 MPa
+h = 1.0, Epp = 5.9e-5, Efp = 1.909e-4
+total G = 7.05e-11, max G = 0.00133
+
+u_max = 12e-5m
+5 steps - no scaling : Gf = 0.001117, f_t = 2.8968 MPa, E = 34000 MPa, 
+h = 1.0, Epp = 5.9e-5, Efp = 1.909e-4
+total G = 1.32e-11, max G = 0.00116
+
+u_max = 16e-5m
+5 steps - no scaling : Gf = 0.001117, f_t = 2.8968 MPa, E = 34000 MPa, 
+h = 1.0, Epp = 5.9e-5, Efp = 1.909e-4
+total G = 7.05e-11, max G = 0.00133
+
+

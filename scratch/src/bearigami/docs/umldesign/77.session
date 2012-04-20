@@ -1,0 +1,11 @@
+window_sizes 1350 787 337 1007 558 144
+diagrams
+  active  classdiagram_ref 128077 // crease
+    805 446 100 4 0 0
+end
+show_stereotypes
+selected classdiagram_ref 128077 // crease
+open
+  classview_ref 128077 // forming
+end
+end

@@ -1,0 +1,24 @@
+window_sizes 1436 838 337 1093 663 90
+diagrams
+  active  classdiagram_ref 128077 // spirrid_class_diag
+    862 639 102 4 12 14
+end
+show_stereotypes
+selected attribute_ref 142285 // n_sim
+open
+  attribute_ref 128333 // code_type
+  class_ref 128205 // ResponseFunction
+  class_ref 128333 // Sampling
+  class_ref 128461 // RegularSampling
+  class_ref 128589 // TGrid
+  class_ref 128717 // PGrid
+  class_ref 128845 // MonteCarlo
+  class_ref 128973 // RandomVariable
+  class_ref 129229 // CodeGen
+  class_ref 129357 // CodeGenNumpy
+  class_ref 129485 // CodeGenCompiled
+  class_ref 136269 // FunctionRandomization
+  class_ref 156365 // LangDict
+  class_ref 143181 // ICBM
+end
+end
