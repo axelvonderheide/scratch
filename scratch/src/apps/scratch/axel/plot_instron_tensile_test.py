@@ -6,7 +6,7 @@ Created on 15.08.2011
 from scipy.optimize import curve_fit
 from numpy import array, mean, var, sqrt, linspace, argmax, argmin, abs, sign
 from math import e, pi as Pi
-from quaducom.resp_func.cb_short_fiber import CBShortFiber
+#from quaducom.resp_func.cb_short_fiber import CBShortFiber
 from matplotlib import pyplot as plt
 import os
 
