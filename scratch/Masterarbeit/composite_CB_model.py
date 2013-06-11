@@ -486,13 +486,14 @@ if __name__ == '__main__':
     
 
     ccb = CompositeCrackBridge( E_m = 25e3,
-                                 reinforcement_lst = [  reinfimage, reinf2  ],
+                                 reinforcement_lst = [   reinf2, reinf  ],
                                  Ll = 20.,
                                  Lr = 20.,
                                  w = 0.01 )
 
     ccb.damage
     plt.plot( ccb._x_arr, ccb._epsm_arr, lw = 2, color = 'red', ls = 'dashed', label = 'analytical' )
+   
     print ccb._epsm_arr[-1]
     print 0.000506374804145
     #plt.plot( np.zeros_like( ccb._epsf0_arr ), ccb._epsf0_arr, 'ro' )
@@ -558,4 +559,5 @@ if __name__ == '__main__':
                     #plt.plot( ccb._x_arr, np.maximum( ccb._epsf0_arr[i] - depsf * np.abs( ccb._x_arr ), ccb._epsm_arr ), 'b' )
     plt.legend( loc = 'best' )
     plt.xlim( -5, 5 )
+   
     plt.show()
