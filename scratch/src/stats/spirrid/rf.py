@@ -11,7 +11,6 @@
 # Thanks for using Simvisage open source!
 #
 # Created on Jun 2, 2010 by: rch
-
 from enthought.traits.api import \
     HasTraits, List, Str, Property, Event, on_trait_change, cached_property, \
     Tuple
@@ -50,13 +49,13 @@ class RF(HasTraits):
         # this line extracts the traits having the 'distr' metadata
 
         # containers for control variables
-        ctrl_trait_keys = self.traits(ctrl_range = lambda x: x != None)
+        ctrl_trait_keys = self.traits(ctrl_range=lambda x: x != None)
         ctrl_keys = []
         ctrl_traits = []
         ctrl_values = []
 
         # containers for parameters
-        param_trait_keys = self.traits(distr = lambda x: x != None)
+        param_trait_keys = self.traits(distr=lambda x: x != None)
         param_keys = []
         param_traits = []
         param_values = []
@@ -126,7 +125,7 @@ class RF(HasTraits):
         self.on_trait_change(self.get_value, self.listener_string)
 
     def remove_listeners(self):
-        self.on_trait_change(self.get_value, self.listener_string, remove = True)
+        self.on_trait_change(self.get_value, self.listener_string, remove=True)
 
     def default_traits_view(self):
         '''
@@ -135,30 +134,30 @@ class RF(HasTraits):
         param_items = [ Item(name) for name in self.param_keys ]
         ctrl_items = [ Item(name) for name in self.ctrl_keys ]
         view = View(VGroup(*param_items,
-                             id = 'stats.spirrid.rf.params'
+                             id='stats.spirrid.rf.params'
                              ),
                     VGroup(*ctrl_items,
-                            id = 'stats.spirrid.rf.ctrl'
+                            id='stats.spirrid.rf.ctrl'
                              ),
-                    kind = 'modal',
-                    height = 0.3, width = 0.2,
-                    scrollable = True,
-                    resizable = True,
-                    buttons = ['OK', 'Cancel'],
-                    id = 'stats.spirrid.rf'
+                    kind='modal',
+                    height=0.3, width=0.2,
+                    scrollable=True,
+                    resizable=True,
+                    buttons=['OK', 'Cancel'],
+                    id='stats.spirrid.rf'
                     )
         return view
 
-    def plot(self, p, ctrl_idx = 0, **kw):
+    def plot(self, p, ctrl_idx=0, **kw):
         X = np.linspace(*self.ctrl_traits[ctrl_idx].ctrl_range)
         Y = self(X, *self.param_values)
         p.plot(X, Y, **kw)
         p.xlabel(self.x_label)
         p.ylabel(self.y_label)
-        p.legend(loc = 'best')
+        p.legend(loc='best')
         p.title(self.title)
 
-    def plot3d(self, p, ctrl_idx = [0, 1], **kw):
+    def plot3d(self, p, ctrl_idx=[0, 1], **kw):
         X = np.linspace(*self.ctrl_traits[ctrl_idx[0]].ctrl_range)
         Y = np.linspace(*self.ctrl_traits[ctrl_idx[1]].ctrl_range)
         Z = self(X, Y, *self.param_values)
