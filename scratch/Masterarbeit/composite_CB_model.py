@@ -274,6 +274,7 @@ class CompositeCrackBridge( HasTraits ):
         for i, mask in enumerate( self.sorted_masks ):
             depsfi = self.sorted_depsf[mask]
             demsi = dems[mask]
+            #print demsi[0]
             fi = 1. / ( depsfi + demsi )
             #fi_list.append( fi )
             #fi_rr = np.hstack( ( fi_rr, fi[::-1] ) )
@@ -463,9 +464,9 @@ if __name__ == '__main__':
                           n_int = 100,
                           label = 'carbon' )
     
-    reinfimage = Reinforcement( r = 0.001, #RV('uniform', loc=0.002, scale=0.002),
-                          tau = RV( 'uniform', loc = 3., scale = 1000 ),
-                          V_f = 0.01,
+    reinfimage = Reinforcement( r = 0.0001, #RV('uniform', loc=0.002, scale=0.002),
+                          tau = RV( 'uniform', loc = 10., scale = 10000 ),
+                          V_f = 0.0000000000000001,
                           E_f = 200e3,
                           xi = WeibullFibers( shape = 100., scale = 0.02 ),
                           n_int = 100,
@@ -473,12 +474,12 @@ if __name__ == '__main__':
     
 
     
-    reinf2 = Reinforcement( r = 0.1,
+    reinfSF = Reinforcement( r = 0.1,
                           tau = 7. ,
-                          lf = 5.,
+                          lf = 3.,
                           snub = .7,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),
-                          V_f = 0.03,
+                          V_f = 0.05,
                           E_f = 200e3,
                           xi = WeibullFibers( shape = 100., scale = 100 ),
                           n_int = 100,
@@ -486,7 +487,7 @@ if __name__ == '__main__':
     
 
     ccb = CompositeCrackBridge( E_m = 25e3,
-                                 reinforcement_lst = [   reinf2, reinf  ],
+                                 reinforcement_lst = [   reinfSF  ],
                                  Ll = 20.,
                                  Lr = 20.,
                                  w = 0.01 )
@@ -494,8 +495,8 @@ if __name__ == '__main__':
     ccb.damage
     plt.plot( ccb._x_arr, ccb._epsm_arr, lw = 2, color = 'red', ls = 'dashed', label = 'analytical' )
    
-    print ccb._epsm_arr[-1]
-    print 0.000506374804145
+    #print ccb._epsm_arr[-1]
+    #print 0.000506374804145
     #plt.plot( np.zeros_like( ccb._epsf0_arr ), ccb._epsf0_arr, 'ro' )
    
     em_func = interp1d( ccb._x_arr, ccb._epsm_arr )
@@ -516,33 +517,40 @@ if __name__ == '__main__':
                 l = np.cos( ccb.sorted_phi[i] ) * ccb.sorted_lf[i] / 2.
                 p = ( l - a[i] ) / l
                 if p < 0:
+                    print 'p<0'
                     al_discr = np.linspace( 0, l, 100 )
                     ems = em_func( al_discr ).reshape( len( al_discr ) , 1 )
-                    al_y = al_discr.reshape( 1, len( al_discr ) )
-                    al_x = al_discr.reshape( len( al_discr ) , 1 )
-                    mmm = np.maximum( depsf * al_y + ems - depsf * al_x, ems )
-                    E_rest = np.sum( mmm, 1 ) / len( al_discr )
+                    ems_cut = ems.reshape( 1, len( al_discr ) )
+                    al_y = al_discr.reshape( len( al_discr ), 1 )
+                    al_x = al_discr.reshape( 1, len( al_discr ) )
+                    mmm = np.maximum( depsf * al_y + ems - depsf * al_x, ems_cut )
+                    E_rest = np.sum( mmm, 0 ) / len( al_discr )
                     Eeps = E_rest
-                    #plt.plot( al_x, Eeps, 'k' )
+                   # plt.plot( al_x, Eeps, 'k' )
                    
                 else:
-                    al_discr = np.linspace( 0, a[i], 100 )
+                    #print 'p:', p, 'phi', ccb.sorted_phi[i], 'a', a[i], 'l', l
+                    al_discr = np.linspace( 0, a[i] , 10 )
                     ems = em_func( al_discr ).reshape( len( al_discr ) , 1 )
-                    al_y = al_discr.reshape( 1, len( al_discr ) )
-                    al_x = al_discr.reshape( len( al_discr ) , 1 )
-                    mmm = np.maximum( depsf * al_y + ems - depsf * al_x, ems )
-                    E_rest = np.sum( mmm, 1 ) / len( al_discr )
+                    ems_cut = ems.reshape( 1, len( al_discr ) )
+                    al_y = al_discr.reshape( len( al_discr ), 1 )
+                    al_x = al_discr.reshape( 1, len( al_discr ) )
+                    mmm = np.maximum( depsf * al_y + ems - depsf * al_x, ems_cut )
+                    E_rest = np.sum( mmm, 0 ) / len( al_discr )
                     normeps = ccb._epsf0_arr[i] - depsf * np.abs( al_discr )
-                    Eeps = ( p * normeps + ( 1 - p ) * E_rest ) 
-                    #plt.plot( al_x, Eeps, 'y' )
+                    Eeps = p * normeps + ( 1 - p ) * E_rest 
+                    plt.plot( al_discr, E_rest, linewidth = '1', color = 'k' )
                 ef_func = interp1d( al_discr, Eeps, bounds_error = False, fill_value = 0 )
                 ef_array = np.maximum( ef_func( ef_discr ), em_ef )
                 plt.plot( ef_discr, ef_array )
                 res_list.append( ef_array )
+    
     res_arr = np.array( res_list )
     mu_eps_f = np.sum( res_arr, 0 ) / res_arr.shape[0]
     Km = ( 1. - ccb.V_f_tot ) * ccb.E_m
     Kf = ccb.V_f_tot * np.max( ccb.sorted_E_f )
+    print Kf, Km
+    print a[1]
     #Km_func = interp1d( a, ccb.Emtrx, bounds_error = False, fill_value = ccb.Emtrx[-1] )
     control = mu_eps_f * Kf + em_ef * Km
     #print control
@@ -558,6 +566,7 @@ if __name__ == '__main__':
                 #pass
                     #plt.plot( ccb._x_arr, np.maximum( ccb._epsf0_arr[i] - depsf * np.abs( ccb._x_arr ), ccb._epsm_arr ), 'b' )
     plt.legend( loc = 'best' )
-    plt.xlim( -5, 5 )
+    plt.xlim( 0, 1 )
+    plt.ylim( 0, 0.055 )
    
     plt.show()
