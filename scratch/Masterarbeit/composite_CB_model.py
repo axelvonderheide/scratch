@@ -46,9 +46,9 @@ class CompositeCrackBridge( HasTraits ):
             V_f_tot += reinf.V_f
         return V_f_tot
 
-    E_c = Property( depends_on = 'reinforcement_lst+' )
+    Kc = Property( depends_on = 'reinforcement_lst+' )
     @cached_property
-    def _get_E_c( self ):
+    def _get_Kc( self ):
         E_fibers = 0.0
         for reinf in self.reinforcement_lst:
             E_fibers += reinf.V_f * reinf.E_f
@@ -167,6 +167,39 @@ class CompositeCrackBridge( HasTraits ):
             else:
                 Pf += method( epsy * masks[i] )
         return Pf
+    
+    amin_it = Float( 5. )
+    def amin_it_default( self ):
+        return 5.#
+    
+    
+    def geo_amin( self, lf, phi, depsmax, Kc, Ef, Vf, damage ):
+            #print self.amin_it
+            a = np.linspace( 0, self.amin_it, 300 )
+            Kf = Vf * self.sorted_nu_r * self.sorted_stats_weights * Ef
+            a_shaped = a.reshape( len( a ), 1 )
+            phi = phi.reshape( 1, len( phi ) )
+            m_p = a_shaped * 2 / np.cos( phi ) / lf
+            mask1 = m_p > 0
+            m_p = m_p * mask1
+            p = np.abs( H( 1 - m_p ) * ( 1 - m_p ) )
+            muT = np.sum( self.sorted_depsf * ( 1 - damage ) * Kf * p , 1 )
+            Kf_intact = np.sum( ( 1 - damage ) * Kf * p , 1 )[::-1]
+            Kf_broken = np.sum( Kf * damage )
+            Emtrx = ( 1. - self.V_f_tot ) * self.E_m + Kf_broken + Kf_intact
+            depsm = muT / Emtrx
+            #print depsm
+            em = np.hstack( ( 0, cumtrapz( depsm, a ) ) )
+            um = np.hstack( ( 0, cumtrapz( em , a ) ) )
+            plt.plot( a, em )
+            plt.plot( a, um )
+            plt.show()
+            ind = np.argmin( np.abs( self.w - depsmax * a ** 2. / 2. + em * a - um ) )
+            amin = a[:ind + 1]
+            self.amin_it = 1.2 * a[ind]
+            #print amin
+            return amin, em[:ind + 1]
+            
     
     def perc( self, a , Kf, damage, depsf ):
         '''evaluates muT and Kf for every point in a '''
@@ -319,10 +352,18 @@ class CompositeCrackBridge( HasTraits ):
         # initial matrix strain derivative
         init_dem = dems[0]
         # debonded length of fibers with Tmax
-        amin = ( self.w / ( np.abs( init_dem ) + np.abs( self.sorted_depsf[0] ) ) ) ** 0.5
+        if np.min( self.sorted_lf ) < 0:
+            amin = ( self.w / ( np.abs( init_dem ) + np.abs( self.sorted_depsf[0] ) ) ) ** 0.5
+            
+        else:
+            #print ( self.w / ( np.abs( init_dem ) + np.abs( self.sorted_depsf[0] ) ) ) ** 0.5
+            a_d, em_b_amin = self.geo_amin( self.sorted_lf, self.sorted_phi, self.sorted_depsf[0], self.Kc, self.sorted_E_f, self.sorted_V_f, iter_damage )
+            amin = a_d[-1]
+            #print amin
         # integrated f(depsf) - see article
         F = self.F( dems, amin )
         # a(T) for double sided pullout
+        print amin
         a1 = np.exp( F / 2. + np.log( amin ) )
         if Lmin < a1[0] and Lmax < a1[0]:
             # all fibers debonded up to Lmin and Lmax
@@ -488,8 +529,8 @@ if __name__ == '__main__':
 
     ccb = CompositeCrackBridge( E_m = 25e3,
                                  reinforcement_lst = [   reinfSF  ],
-                                 Ll = 20.,
-                                 Lr = 20.,
+                                 Ll = 10.,
+                                 Lr = 10.,
                                  w = 0.01 )
 
     ccb.damage
@@ -549,8 +590,8 @@ if __name__ == '__main__':
     mu_eps_f = np.sum( res_arr, 0 ) / res_arr.shape[0]
     Km = ( 1. - ccb.V_f_tot ) * ccb.E_m
     Kf = ccb.V_f_tot * np.max( ccb.sorted_E_f )
-    print Kf, Km
-    print a[1]
+    #print Kf, Km
+    #print a[1]
     #Km_func = interp1d( a, ccb.Emtrx, bounds_error = False, fill_value = ccb.Emtrx[-1] )
     control = mu_eps_f * Kf + em_ef * Km
     #print control
