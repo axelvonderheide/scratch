@@ -6,13 +6,13 @@ Created on 16.11.2012
 from etsproxy.traits.ui.api import ModelView
 from etsproxy.traits.api import Instance, Property, cached_property, Array
 import numpy as np
-from matplotlib import pyplot as plt
 from spirrid.rv import RV
 from scipy.optimize import brentq, fminbound
 from scipy.integrate import cumtrapz
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 import time
 from hom_CB_elastic_mtrx import CompositeCrackBridge
+from matplotlib import pyplot as plt
 # from quaducom.meso.homogenized_crack_bridge.elastic_matrix.hom_CB_elastic_mtrx_py_loop import CompositeCrackBridgeLoop
 
 
@@ -242,8 +242,8 @@ if __name__ == '__main__':
 
     model = CompositeCrackBridge( E_m = 25e3,
                                  reinforcement_lst = [reinfSF, reinf1],
-                                 Ll = .2,
-                                 Lr = .2,
+                                 Ll = .1,
+                                 Lr = 1.,
                                  discr_amin = 30 )
     
 
@@ -301,7 +301,7 @@ if __name__ == '__main__':
     # TODO: check energy for combined reinf
     # energy(np.linspace(.0, .15, 100))
     # profile(1.0)
-    w = np.linspace( 0., 0.03, 1000 )
+    w = np.linspace( 0., 0.1, 500 )
     sigma_c_w( w )
     # bundle at 20 mm
     # sigma_bundle = 70e3*w/20.*np.exp(-(w/20./0.03)**5.)

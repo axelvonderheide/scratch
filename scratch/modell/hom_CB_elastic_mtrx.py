@@ -36,7 +36,6 @@ class CompositeCrackBridge( HasTraits ):
     c_mask = Property( depends_on = 'reinforcement_lst+' )
     @cached_property
     def _get_c_mask( self ):
-        print 'wolllolololo'
         return ( self.sorted_lf == np.infty )
         
     V_f_tot = Property( depends_on = 'reinforcement_lst+' )
@@ -59,6 +58,7 @@ class CompositeCrackBridge( HasTraits ):
     sorted_theta = Property( depends_on = 'reinforcement_lst+' )
     @cached_property
     def _get_sorted_theta( self ):
+        print 'initiation'
         '''sorts the integral points by bond in descending order'''
         depsf_arr = np.array( [] )
         V_f_arr = np.array( [] )
@@ -409,7 +409,7 @@ class CompositeCrackBridge( HasTraits ):
                 vxL = ( self.w - Lmin * l_em[0] - Lmax * r_em[-1] + umL + umR - self.sorted_depsf * ( Lmin ** 2 + Lmax ** 2 ) / 2 - \
                         Lmax * ( l_em[0] + ( Lmin - Lmax ) * self.sorted_depsf - em[-1] ) ) / ( Lmin + Lmax )
                 epsf0 = Lmin * self.sorted_depsf + vxL + l_em[0]
-            elif Lmin < a1[0] and Lmax > a1[0]:
+            elif Lmin < a1[0] and Lmax >= a1[0]:
                 # all fibers debonded up to Lmax but not up to Lmin
                 
                 min_a = np.sum( ( Lmin - a_geo ) > 0 )
@@ -419,11 +419,13 @@ class CompositeCrackBridge( HasTraits ):
                 umL = np.trapz( np.hstack( ( 0, l_em [::-1] ) ), -l_a[::-1] )
                 # amin numerisch neu bestimmen fuer SF (geo_amin one sided)
                 almin_arr, depsm_lmin = self.geo_amin_os( iter_damage, Lmin, Lmax )
+                a_geo = almin_arr
+                depsm_geo = depsm_lmin
                 amin = almin_arr[-1]
                 C = np.log( amin ** 2 + 2 * Lmin * amin - Lmin ** 2 )
                 a2 = np.sqrt( 2 * Lmin ** 2 + np.exp( ( F + C ) ) ) - Lmin
                 if Lmax <= a2[-1]:
-                    print 'Lmin <amin + Lmax >amin und <a2[-1]'
+                    print 'Lmin <amin und Lmax <a2[-1]'
                     idx = np.sum( a2 < Lmax ) - 1
                     a = np.hstack( ( l_a[:-1], 0.0, a_geo[1:-1], a2[:idx + 1], Lmax ) )
                     em22 = cumtrapz( depsm_geo[:-1], a_geo[:-1] )
@@ -431,9 +433,12 @@ class CompositeCrackBridge( HasTraits ):
                     em = np.hstack( ( l_em, 0.0, em22, em2[:idx + 1], em2[idx] + ( Lmax - a2[idx] ) * dems[idx] ) )
                     um = np.trapz( em, a )
                     epsf01 = em2[:idx + 1] + a2[:idx + 1] * self.sorted_depsf[:idx + 1]
-                    vx02L = ( self.w - Lmin * l_em[0] - Lmax * em[-1] + um - self.sorted_depsf[idx:] * ( Lmin ** 2 + Lmax ** 2 ) / 2 - \
-                           Lmax * ( l_em[0] + ( Lmin - Lmax ) * self.sorted_depsf[idx:] - em[-1] ) ) / ( Lmin + Lmax )
-                    epsf02 = vx02L + self.sorted_depsf[idx:] * Lmin + l_em[0]
+                    # if a2[0] > Lmax:
+                    #    print 'dangerous'
+                    #    idx = 0
+                    vx02L = ( self.w - Lmin * l_em[0] - Lmax * em[-1] + um - self.sorted_depsf[idx + 1:] * ( Lmin ** 2 + Lmax ** 2 ) / 2 - \
+                           Lmax * ( l_em[0] + ( Lmin - Lmax ) * self.sorted_depsf[idx + 1:] - em[-1] ) ) / ( Lmin + Lmax )
+                    epsf02 = vx02L + self.sorted_depsf[idx + 1:] * Lmin + l_em[0]
                     epsf0 = np.hstack( ( epsf01, epsf02 ) )
                 else:
                     print 'Lmin <amin und Lmax >a2[-1]'
@@ -481,8 +486,8 @@ class CompositeCrackBridge( HasTraits ):
                     em = np.hstack( ( em_short[:-1], em22[::-1], 0, em22, em_long, em_long[-1] + ( Lmax - a_long[-1] ) * dems[idx1 + idx2] ) )
                     um = np.trapz( em, a )
                     epsf01 = em_long + a_long * self.sorted_depsf[:idx1 + idx2]
-                    vx02 = ( self.w - Lmin * l_em[0] - Lmax * em[-1] + um - self.sorted_depsf[idx1 + idx2:] * ( Lmin ** 2 + Lmax ** 2 ) / 2 - \
-                           Lmax * ( l_em[0] + ( Lmin - Lmax ) * self.sorted_depsf[idx1 + idx2:] - em[-1] ) ) / ( Lmin + Lmax )
+                    vx02 = ( self.w - Lmin * em[0] - Lmax * em[-1] + um - self.sorted_depsf[idx1 + idx2:] * ( Lmin ** 2 + Lmax ** 2 ) / 2 - \
+                           Lmax * ( em[0] + ( Lmin - Lmax ) * self.sorted_depsf[idx1 + idx2:] - em[-1] ) ) / ( Lmin + Lmax )
                     epsf02 = vx02 + self.sorted_depsf[idx1 + idx2:] * Lmin + em[0]
                     epsf0 = np.hstack( ( epsf01, epsf02 ) )
                 else:
@@ -623,7 +628,6 @@ class CompositeCrackBridge( HasTraits ):
         epsf0, x_short, x_long = self.profile( iter_damage, Lmin, Lmax )
         residuum = self.vect_xi_cdf( epsf0, x_short = x_short, x_long = x_long ) - iter_damage
         return residuum
-
     _x_arr = Array
     def __x_arr_default( self ):
         return np.hstack( ( np.repeat( 1e-10, len( self.sorted_depsf ) + 1 ), 0, np.repeat( 1e-10, len( self.sorted_depsf ) + 1 ) ) )
@@ -639,7 +643,18 @@ class CompositeCrackBridge( HasTraits ):
     _epsf0_arr = Array
     def __epsf0_arr_default( self ):
         return np.repeat( 1e-10, len( self.sorted_depsf ) )
+    
+    _first_guess = Array
+    def __first_guess_default( self ):
+        return  np.ones_like( self.sorted_depsf ) * 1e-10
+    
+    def set_sfarr_to_defaults( self ):
+        self._a_long = self.__a_long_default()
+        self._epsf0_arr = self.__epsf0_arr_default()
+        self._x_arr = self.__x_arr_default()
+        self._epsm_arr = self.__epsm_arr_default()
 
+        
     damage = Property( depends_on = 'w, Ll, Lr, reinforcement+' )
     @cached_property
     def _get_damage( self ):
@@ -647,16 +662,18 @@ class CompositeCrackBridge( HasTraits ):
             damage = np.zeros_like( self.sorted_depsf )
         else:
             ff = t.clock()
-            
             try:
+                self.set_sfarr_to_defaults()
                 damage = root( self.damage_residuum, np.ones_like( self.sorted_depsf ) * 1e-10, method = 'excitingmixing' )
                 if np.any( damage.x < 0.0 ) or np.any( damage.x > 1.0 ):
                     raise ValueError
                 damage = damage.x
             except:
                 print 'fast opt method does not converge: switched to a slower, robust method for this step'
-                damage = root( self.damage_residuum, np.ones_like( self.sorted_depsf ) * 1e-10, method = 'krylov' )
+                
+                damage = root( self.damage_residuum, self._first_guess, method = 'krylov' )
                 damage = damage.x
+                self._first_guess = damage
             # print 'damage =', np.sum(damage) / len(damage), 'iteration time =', t.clock() - ff, 'sec'
         return damage
 
@@ -673,7 +690,7 @@ if __name__ == '__main__':
     
     reinfSF = ShortFibers( r = 0.1,
                           tau = 7.,
-                          lf = 5.,
+                          lf = .3,
                           snub = 2.,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),
                           V_f = 0.01,
@@ -684,10 +701,10 @@ if __name__ == '__main__':
 
     ccb = CompositeCrackBridge( E_m = 25e3,
                                  reinforcement_lst = [reinfSF, reinf1],
-                                 Ll = .02,
-                                 Lr = .05,
+                                 Ll = 1.,
+                                 Lr = 2.,
                                  w = 0.002,
-                                 discr_amin = 300 )
+                                 discr_amin = 100 )
 
 #    reinf = ContinuousFibers(r=0.01,
 #                          tau=RV('uniform', loc=0.01, scale=.5),
