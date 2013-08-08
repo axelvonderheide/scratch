@@ -36,6 +36,7 @@ class CompositeCrackBridge( HasTraits ):
     c_mask = Property( depends_on = 'reinforcement_lst+' )
     @cached_property
     def _get_c_mask( self ):
+        print 'wolllolololo'
         return ( self.sorted_lf == np.infty )
         
     V_f_tot = Property( depends_on = 'reinforcement_lst+' )
@@ -466,7 +467,6 @@ class CompositeCrackBridge( HasTraits ):
                 # amin = -Lmin + np.sqrt( 4 * Lmin ** 2 * p ** 2 - 4 * p * emLmin * Lmin + 4 * p * umLmin - 2 * p * Lmin ** 2 * depsfLmin + 2 * p * self.w ) / p
                 C = np.log( amin ** 2 + 2 * amin * Lmin - Lmin ** 2 )
                 a2 = ( np.sqrt( 2 * Lmin ** 2 + np.exp( F + C - F[idx1] ) ) - Lmin )[idx1:]
-                
                 # matrix strain profiles - shorter side
                 a_short = np.hstack( ( -a_short[::-1], 0.0 ) )
                 dems_short = dems[:idx1]
@@ -481,7 +481,9 @@ class CompositeCrackBridge( HasTraits ):
                     em = np.hstack( ( em_short[:-1], em22[::-1], 0, em22, em_long, em_long[-1] + ( Lmax - a_long[-1] ) * dems[idx1 + idx2] ) )
                     um = np.trapz( em, a )
                     epsf01 = em_long + a_long * self.sorted_depsf[:idx1 + idx2]
-                    epsf02 = ( self.w + um + self.sorted_depsf [idx1 + idx2:] / 2. * ( Lmin ** 2 + Lmax ** 2 ) ) / ( Lmin + Lmax )
+                    vx02 = ( self.w - Lmin * l_em[0] - Lmax * em[-1] + um - self.sorted_depsf[idx1 + idx2:] * ( Lmin ** 2 + Lmax ** 2 ) / 2 - \
+                           Lmax * ( l_em[0] + ( Lmin - Lmax ) * self.sorted_depsf[idx1 + idx2:] - em[-1] ) ) / ( Lmin + Lmax )
+                    epsf02 = vx02 + self.sorted_depsf[idx1 + idx2:] * Lmin + em[0]
                     epsf0 = np.hstack( ( epsf01, epsf02 ) )
                 else:
                     print 'a2[-1]<Lmax'
@@ -674,7 +676,7 @@ if __name__ == '__main__':
                           lf = 5.,
                           snub = 2.,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),
-                          V_f = 0.3,
+                          V_f = 0.01,
                           E_f = 200e3,
                           xi = 1.,  # WeibullFibers( shape = 1000., scale = 1000 ),
                           n_int = 300,
