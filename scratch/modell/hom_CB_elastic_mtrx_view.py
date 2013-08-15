@@ -252,7 +252,7 @@ if __name__ == '__main__':
     reinfSF = ShortFibers( r = 0.1,
                           tau = 1.,
                           lf = 30.,
-                          snub = 7.,
+                          snub = 3.,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),
                           V_f = 0.01,
                           E_f = 180e3,
@@ -280,6 +280,7 @@ if __name__ == '__main__':
 
     def sigma_c_w( w_arr ):
         sigma_c_arr, u_arr = ccb_view.sigma_c_arr( w_arr, u = True )
+        print ccb_view.model.damage
         plt.plot( w_arr, sigma_c_arr, lw = 2, color = 'black', label = 'w-sigma' )
         # plt.plot(u_arr, sigma_c_arr, lw=2, label='u-sigma')
         # plt.plot(ccb_view.sigma_c_max[1], ccb_view.sigma_c_max[0], 'bo')
@@ -359,7 +360,7 @@ if __name__ == '__main__':
                               phi = RV( 'sin2x', loc = 0., scale = 1. ),
                               V_f = 0.05,
                               E_f = 180e3,
-                              xi = 100.,  # WeibullFibers( shape = 1000., scale = 1000 ),
+                              xi = .05,  # WeibullFibers( shape = 1000., scale = 1000 ),
                               n_int = 100,
                               label = 'Short Fibers' )
                 ccb_view.model.reinforcement_lst = [reinfSF, reinf1]
@@ -429,7 +430,7 @@ if __name__ == '__main__':
     # TODO: check energy for combined reinf
     # energy(np.linspace(.0, .15, 100))
     # profile( 1.0 )
-    w = np.linspace( 0.00, 1.9, 100 )
+    w = np.linspace( 0.00, 3.0, 100 )
     sigma_c_w( w )
     # plot3D_para( para_range )
     '''bundles'''

@@ -521,9 +521,7 @@ class CompositeCrackBridge( HasTraits ):
                 em1 = np.hstack( ( em11, em11[-1] + np.cumsum( np.diff( np.hstack( ( a_geo[-2], a1 ) ) ) * dems ) ) )
                 em = np.hstack( ( em1[-1], em1[::-1], 0.0, em1, em1[-1] ) )
                 epsf0 = em1[len( em11 ):] + self.sorted_depsf * a1
-            # print epsf0, 'comp', self.epsf0_sf1()
             epsf0[self.sf_mask] = self.epsf0_sf1()
-            # print epsf0
             self._x_arr = a
             self._epsm_arr = em
             self._epsf0_arr = epsf0
@@ -714,7 +712,7 @@ if __name__ == '__main__':
                                  reinforcement_lst = [reinfSF, reinf1],
                                  Ll = 100.,
                                  Lr = 100.,
-                                 w = 0.2,
+                                 w = 50,
                                  discr_amin = 100 )
 
 #    reinf = ContinuousFibers(r=0.01,
