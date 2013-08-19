@@ -11,7 +11,7 @@ can be used by the composite crack bridge model.
 import numpy as np
 
 from etsproxy.traits.api import HasTraits, cached_property, \
-    Float, Property, Int, Str
+    Float, Property, Int, Str, Range
 from types import FloatType
 from util.traits.either_type import EitherType
 from stats.pdistrib.weibull_fibers_composite_distr import WeibullFibers
@@ -21,7 +21,7 @@ class Reinforcement( HasTraits ):
     '''common class for all reinforcement types'''
     label = Str( 'reinforcement' )
     r = EitherType( klasses = [FloatType, RV] )
-    V_f = Float
+    V_f = Range( 1e-6, 1 - 1e-6 )
     E_f = Float
     xi = EitherType( klasses = [FloatType, RV, WeibullFibers] )
     tau = EitherType( klasses = [FloatType, RV] )

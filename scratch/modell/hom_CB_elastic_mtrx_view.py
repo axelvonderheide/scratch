@@ -1,10 +1,8 @@
-'''
-Created on 16.11.2012
 
-@author: Q
-'''
-from etsproxy.traits.ui.api import ModelView
-from etsproxy.traits.api import Instance, Property, cached_property, Array
+from enthought.traits.api import HasTraits, Int, Float, Str, Property, Range, Array
+from etsproxy.traits.ui.api import ModelView, View, Item, Label
+from enthought.chaco.chaco_plot_editor import ChacoPlotItem
+from etsproxy.traits.api import Instance, cached_property 
 import numpy as np
 from spirrid.rv import RV
 from scipy.optimize import brentq, fminbound
@@ -14,6 +12,7 @@ import time
 from scipy.optimize import minimize
 from hom_CB_elastic_mtrx import CompositeCrackBridge
 from matplotlib import pyplot as plt
+
 # from quaducom.meso.homogenized_crack_bridge.elastic_matrix.hom_CB_elastic_mtrx_py_loop import CompositeCrackBridgeLoop
 
 
@@ -33,9 +32,9 @@ class CompositeCrackBridgeView( ModelView ):
         '''
         sigma_c = np.sum( self.model._epsf0_arr * self.model.sorted_stats_weights * self.model.sorted_V_f * 
                       self.model.sorted_nu_r * self.model.sorted_E_f * ( 1. - self.model.damage ) )
-        condition = ( np.sum( self.model.damage[self.model.c_mask] ) / np.sum( self.model.c_mask ) > 0.95 )
-        if condition:
-            sigma_c = 0.
+        # condition = ( np.sum( self.model.damage[self.model.c_mask] ) / np.sum( self.model.c_mask ) > 0.95 )
+        # if condition:
+        #    sigma_c = 0.
         Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
             self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
         E_mtrx = ( 1. - self.model.V_f_tot ) * self.model.E_m + Kf_broken
@@ -279,15 +278,16 @@ if __name__ == '__main__':
         plt.ylabel( 'strain' )
 
     def sigma_c_w( w_arr ):
-        sigma_c_arr, u_arr = ccb_view.sigma_c_arr( w_arr, u = True )
-        print ccb_view.model.damage
-        plt.plot( w_arr, sigma_c_arr, lw = 2, color = 'black', label = 'w-sigma' )
-        # plt.plot(u_arr, sigma_c_arr, lw=2, label='u-sigma')
-        # plt.plot(ccb_view.sigma_c_max[1], ccb_view.sigma_c_max[0], 'bo')
-        plt.xlabel( 'w,u [mm]' )
-        plt.ylabel( '$\sigma_c$ [MPa]' )
-        plt.legend( loc = 'best' )
-        
+        VF = [0.01, 0.02, 0.03, 0.04, 0.05]
+        for vf in VF:
+            sigma_c_arr, u_arr = ccb_view.sigma_c_arr( w_arr, u = True )
+            print ccb_view.model.damage
+            plt.plot( w_arr, sigma_c_arr, lw = 2, color = 'black', label = 'w-sigma' )
+            # plt.plot(u_arr, sigma_c_arr, lw=2, label='u-sigma')
+            # plt.plot(ccb_view.sigma_c_max[1], ccb_view.sigma_c_max[0], 'bo')
+            plt.xlabel( 'w,u [mm]' )
+            plt.ylabel( '$\sigma_c$ [MPa]' )
+            plt.legend( loc = 'best' )    
 
     def sigma_f( w_arr ):
         sf_arr = ccb_view.sigma_f_lst( w_arr )
@@ -322,9 +322,8 @@ if __name__ == '__main__':
         plt.legend( loc = 'best' )
     
     def plot_lf_vf():
-        Vf = np.linspace( 0.001, 0.1, 10 )
-        tau_arr = np.linspace( 0.1, 3, 10 )
-        lf_arr = np.array( [0.3, 0.7, 1, 1.5, 3, 5, 100, 1000] )
+        Vf = np.linspace( 0.001, 0.06, 50 )
+        lf_arr = np.array( [3., 10., 20.] )
         for lf in lf_arr:
             res_list = []
             for vf in Vf:
@@ -339,69 +338,41 @@ if __name__ == '__main__':
                               n_int = 100,
                               label = 'Short Fibers' )
                 ccb_view.model.reinforcement_lst = [reinfSF, reinf1]
-                res = ccb_view.sigma_c_x( 10. )
+                res = ccb_view.sigma_c_max
                 # print res
-                res_list.append( res[1] )
-            res_arr = np.array( res_list )
-            res_res = 100 - res_arr / res_arr[0] * 100
-            print
-            plt.plot( Vf * 100, res_res, 'k' )
+                res_list.append( res[0] )
+            plt.plot( Vf, res_list, label = lf )
     
     def plot_w_sigma():
         # r_arr = np.linspace( 0.05, 0.2, 20 )
-        lf_arr = [0.01, 0.1, 0.3, 4, 10]
-        w_arr = np.linspace( 0, 0.15, 40 )
-        res_list = []
-        for lf in lf_arr:
+        vf_arr = [0.01, 0.03, 0.05]
+        w_arr = np.linspace( 0, 1, 40 )
+        maxs_ls = []
+        maxw_ls = []
+        for vf in vf_arr:
                 reinfSF = ShortFibers( r = .1,
                               tau = 1.,
-                              lf = lf,
-                              snub = 7.,
+                              lf = 30.,
+                              snub = 1.,
                               phi = RV( 'sin2x', loc = 0., scale = 1. ),
-                              V_f = 0.05,
+                              V_f = vf,
                               E_f = 180e3,
                               xi = .05,  # WeibullFibers( shape = 1000., scale = 1000 ),
                               n_int = 100,
                               label = 'Short Fibers' )
                 ccb_view.model.reinforcement_lst = [reinfSF, reinf1]
-                res = ccb_view.sigma_c_arr( w_arr, u = True )
+                res = ccb_view.sigma_c_arr( w_arr, u = False )
                 # res = minimize( mini_tool, x0 = [0.001], method = 'Nelder-mead' )
-                plt.plot( w_arr, res[0], label = "vf %s" % vf )
-    '''
-    def plot_Ef_vf():
-        # r_arr = np.linspace( 0.05, 0.2, 20 )
-        Ef_arr = np.linspace( 0.00000001, 180e3, 100 )
-        Vf = np.linspace( 0.001, 0.1, 10 )
-        
-        for i, vf in enumerate( Vf ):
-            res_list = []
-            for EF in Ef_arr:
-                    reinfSF = ShortFibers( r = .1,
-                                  tau = 1.,
-                                  lf = .3,
-                                  snub = 7.,
-                                  phi = RV( 'sin2x', loc = 0., scale = 1. ),
-                                  V_f = vf,
-                                  E_f = EF,
-                                  xi = 1.,  # WeibullFibers( shape = 1000., scale = 1000 ),
-                                  n_int = 100,
-                                  label = 'Short Fibers' )
-                    ccb_view.model.reinforcement_lst = [reinfSF, reinf1]
-                    res = ccb_view.sigma_c_max
-                    print res
-                    # res = minimize( mini_tool, x0 = [0.001], method = 'Nelder-mead' )
-                    res_list.append( res[1] )
-                    if i == 0:
-                        reference = res[1]
-            res_arr = np.array( res_list )
-            res_res = 100. - res_arr / reference * 100.
-            plt.plot( lf_arr, res_list, 'k' )
-    '''
+                sigma_max , w_max = ccb_view.sigma_c_max
+                maxs_ls.append( sigma_max )
+                maxw_ls.append( w_max )
+                plt.plot( w_arr, res , label = vf, color = 'k' )
+        plt.plot( maxw_ls, maxs_ls, 'ro' )
             
     def plot_lf_perc():
         # r_arr = np.linspace( 0.05, 0.2, 20 )
         lf_arr = np.linspace( 30, 100, 100 )
-        Vf = np.linspace( 0.1, 0.1, 10 )
+        Vf = np.linspace( 0.06, 0.1, 10 )
         
         for i, vf in enumerate( Vf ):
             res_list = []
@@ -424,19 +395,19 @@ if __name__ == '__main__':
                         reference = res[1]
             res_arr = np.array( res_list )
             res_res = 100. - res_arr / reference * 100.
-            plt.plot( lf_arr, res_list, 'k' )
+            plt.plot( lf_arr, res_list, 'k' )   
             
     # ccb_view.model.configure_traits()
     # TODO: check energy for combined reinf
     # energy(np.linspace(.0, .15, 100))
     # profile( 1.0 )
-    w = np.linspace( 0.00, 3.0, 100 )
-    sigma_c_w( w )
+    # w = np.linspace( 0.00, 10.0, 1000 )
+    # sigma_c_w( w )
     # plot3D_para( para_range )
     '''bundles'''
     # plot_lf_vf()
     # plot_lf_perc()
-    # plot_w_sigma()
+    plot_w_sigma()
     ''''''
 
     # bundle at 20 mm
@@ -444,5 +415,7 @@ if __name__ == '__main__':
     # plt.plot(w,sigma_bundle)
     # plt.plot(ccb_view.sigma_c_max[1], ccb_view.sigma_c_max[0], 'ro')
     # sigma_f(np.linspace(.0, .16, 50))
-    plt.legend( loc = 'best' )
-    plt.show()
+    # plt.legend( loc = 'best' )
+    # plt.show()
+    
+

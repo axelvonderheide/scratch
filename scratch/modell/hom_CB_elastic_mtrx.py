@@ -62,7 +62,7 @@ class CompositeCrackBridge( HasTraits ):
     sorted_theta = Property( depends_on = 'reinforcement_lst+' )
     @cached_property
     def _get_sorted_theta( self ):
-        print 'initiation'
+        print 'reconfiguring model reinforcement settings'
         '''sorts the integral points by bond in descending order'''
         depsf_arr = np.array( [] )
         V_f_arr = np.array( [] )
@@ -365,12 +365,14 @@ class CompositeCrackBridge( HasTraits ):
         # plt.show()
         return F
     
-    def epsf0_sf1( self ):
+    def epsf0_sf1( self, Lmax ):
         a = self._a_long [self.sf_mask]
         al = self.sorted_al
         depsf = self.sorted_depsf[self.sf_mask]
-        mask = ( a < al )
-        a = a * mask + al * ( 1 - mask )
+        # bound_cond_mask = ( a == Lmax ) 
+        # a = a * ( 1 - bound_cond_mask ) + 1e6 * bound_cond_mask
+        phy_cond_mask = ( a < al )
+        a = a * phy_cond_mask + al * ( 1 - phy_cond_mask )
         emipt = interp1d( self._x_arr, self._epsm_arr )
         res = depsf * ( 2. - a / al ) / 2.*a + emipt( a )
         return res
@@ -521,7 +523,7 @@ class CompositeCrackBridge( HasTraits ):
                 em1 = np.hstack( ( em11, em11[-1] + np.cumsum( np.diff( np.hstack( ( a_geo[-2], a1 ) ) ) * dems ) ) )
                 em = np.hstack( ( em1[-1], em1[::-1], 0.0, em1, em1[-1] ) )
                 epsf0 = em1[len( em11 ):] + self.sorted_depsf * a1
-            epsf0[self.sf_mask] = self.epsf0_sf1()
+            epsf0[self.sf_mask] = self.epsf0_sf1( Lmax )
             self._x_arr = a
             self._epsm_arr = em
             self._epsf0_arr = epsf0
@@ -533,6 +535,7 @@ class CompositeCrackBridge( HasTraits ):
                 a_long = np.hstack( ( a_long, Lmax * np.ones( len( self.sorted_depsf ) - len( a_long ) ) ) )
             self._a_long = a_long
             return epsf0, a_short, a_long
+        
     
     else: 
         '''
@@ -702,7 +705,7 @@ if __name__ == '__main__':
                           lf = 30.,
                           snub = 2.,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),
-                          V_f = 0.014,
+                          V_f = 0.00001,
                           E_f = 200e3,
                           xi = 100.,  # WeibullFibers( shape = 1000., scale = 1000 ),
                           n_int = 5,
@@ -710,8 +713,8 @@ if __name__ == '__main__':
     
     ccb = CompositeCrackBridge( E_m = 25e3,
                                  reinforcement_lst = [reinfSF, reinf1],
-                                 Ll = 100.,
-                                 Lr = 100.,
+                                 Ll = .2,
+                                 Lr = .2,
                                  w = 50,
                                  discr_amin = 100 )
 
@@ -729,6 +732,7 @@ if __name__ == '__main__':
 #                                 Lr=87.,
 #                                 w=0.004)
     ccb.damage
+    print ccb.V_f_tot
     plt.plot( ccb._x_arr, ccb._epsm_arr, lw = 2, color = 'red', label = 'analytical' )  # , ls = 'dashed' )
     plt.plot( np.zeros_like( ccb._epsf0_arr ), ccb._epsf0_arr, 'ro' )
     for i, depsf in enumerate( ccb.sorted_depsf ):
