@@ -1,6 +1,6 @@
 
 
-from traits.editors.mpl_figure_editor import MPLFigureEditor
+# from traits.editors.mpl_figure_editor import MPLFigureEditor
 from matplotlib.figure import Figure
 from enthought.traits.ui.api import \
     View, Item, VGroup, HGroup, ModelView, HSplit, VSplit
@@ -106,7 +106,7 @@ class SCMModelView ( ModelView ):
             axes.plot( scm.x_arr, scm.eps_m_x, lw = 2, color = 'blue', label = 'Matrix' )
             axes.plot( scm.x_arr, scm.eps_r_x, lw = 2, color = 'red', label = 'Bewehrung' )
             axes.set_ylim( 0, 0.001 )
-            #axes.legend( loc = 'upper right' )
+            # axes.legend( loc = 'upper right' )
 
         # ----------------------------------------------
 
@@ -114,7 +114,7 @@ class SCMModelView ( ModelView ):
         # SIMULATED STOCHASTIC CRACKING
 
         def simulated_sigma_eps( axes ):
-            #scm._get_cbs_responses()
+            # scm._get_cbs_responses()
             if len( scm.cracks ) == 0:
                 cs = 10e9
             else:
@@ -129,8 +129,8 @@ class SCMModelView ( ModelView ):
             axes.plot( eps_c, sigma_c, lw = 2, color = 'red', label = 'simulation, CS = %.1f mm' % cs )
 #            axes.plot( eps_c, array( eps_c ) * scm.cb.Kc / scm.cb.Ac, lw = 1, color = 'red',
 #                       label = 'uncracked composite' )
-            #axes.plot( eps_c, array( eps_c ) * scm.cb.Kr / scm.cb.Ac, lw = 1, color = 'black',
-                       #label = 'reinforcement only' )
+            # axes.plot( eps_c, array( eps_c ) * scm.cb.Kr / scm.cb.Ac, lw = 1, color = 'black',
+                       # label = 'reinforcement only' )
 #            axes.plot( scm.cbs_sum_strain , scm.P_list , label = 'cbs sum',
 #                       lw = 2, color = 'green' )
             axes.set_axis_bgcolor( color = 'white' )
@@ -149,7 +149,7 @@ class SCMModelView ( ModelView ):
             axes.plot( scm.x_arr, scm.random_field, color = 'black', label = 'matrix strength' )
             axes.plot( scm.x_arr, scm.sigma_m_x, color = 'red', label = 'matrix stress' )
             axes.set_ylim( 0, max( scm.random_field ) * 1.2 )
-            #axes.legend( loc = 'upper right' )
+            # axes.legend( loc = 'upper right' )
 
 
         # ----------------------------------------------

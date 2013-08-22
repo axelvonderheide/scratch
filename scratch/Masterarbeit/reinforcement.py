@@ -9,7 +9,7 @@ can be used by the composite crack bridge model.
 '''
 
 import numpy as np
-from stats.spirrid.rv import RV
+from spirrid.rv import RV
 from etsproxy.traits.api import HasTraits, cached_property, \
     Float, Property, Int, Str
 from types import FloatType
@@ -81,8 +81,8 @@ class Reinforcement( HasTraits ):
             lf = self.lf
             phi = self.phi.ppf( np.linspace( 0.02, 0.95, self.n_int ) )
             tau = tau * np.exp( self.snub * phi ) / np.cos( phi )
-            #print np.max( ( np.exp( self.snub * phi ) / np.cos( phi ) ) / np.min( np.exp( self.snub * phi ) / np.cos( phi ) ) )
-            #print np.exp( self.snub * phi ) / np.cos( phi )
+            # print np.max( ( np.exp( self.snub * phi ) / np.cos( phi ) ) / np.min( np.exp( self.snub * phi ) / np.cos( phi ) ) )
+            # print np.exp( self.snub * phi ) / np.cos( phi )
             stat_weights *= 1. / self.n_int
             nu_r = np.ones( len( phi ) )
             
