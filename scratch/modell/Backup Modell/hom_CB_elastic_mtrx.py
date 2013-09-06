@@ -33,7 +33,7 @@ class CompositeCrackBridge( HasTraits ):
     E_m = Float
     Ll = Float
     Lr = Float
-    discr_amin = Float( 25. )
+    discr_amin = Float( 50. )
     c_mask = Property( depends_on = 'reinforcement_lst+' )
     @cached_property
     def _get_c_mask( self ):
@@ -59,12 +59,6 @@ class CompositeCrackBridge( HasTraits ):
             E_fibers += reinf.V_f * reinf.E_f
         E_c = self.E_m * ( 1. - self.V_f_tot ) + E_fibers
         return E_c * ( 1. + 1e-15 )
-    
-    Kf = Property( depends_on = 'reinforcement_lst+' )
-    @cached_property
-    def _get_Kf( self ):
-        return self.sorted_V_f * self.sorted_nu_r * \
-                self.sorted_stats_weights * self.sorted_E_f * self.soc
 
     sorted_theta = Property( depends_on = 'reinforcement_lst+' )
     @cached_property
@@ -171,6 +165,7 @@ class CompositeCrackBridge( HasTraits ):
         # soc = np.ones_like( self.sorted_phi )
         norm = np.sum( 1. / np.cos( self.sorted_phi[self.sf_mask] ) / len( self.sorted_phi[self.sf_mask] ) )
         soc = self.sf_mask / np.cos( self.sorted_phi ) / norm + self.c_mask
+        print np.mean( soc )
         return soc
 
     sorted_xi_cdf = Property( depends_on = 'reinforcement_lst+' )
@@ -221,7 +216,7 @@ class CompositeCrackBridge( HasTraits ):
             depsmax = self.sorted_depsf[0]
             Ef = self.sorted_E_f
             a = np.linspace( 0, self.amin_it[-1] * 1.2 , self.discr_amin )
-            Kf = self.Kf
+            Kf = Vf * self.sorted_nu_r * self.sorted_stats_weights * Ef * self.soc
             a_shaped = a.reshape( len( a ), 1 )
             phi = phi.reshape( 1, len( phi ) )
             m_p = a_shaped * 2 / np.cos( phi ) / lf
@@ -261,7 +256,7 @@ class CompositeCrackBridge( HasTraits ):
             Ef = self.sorted_E_f
             al = self.sorted_l_ez
             a = np.linspace( Lmin, Lmin * 1.5, self.discr_amin )
-            Kf = self.Kf
+            Kf = Vf * self.sorted_nu_r * self.sorted_stats_weights * Ef * self.soc
             a_shaped = a.reshape( len( a ), 1 )
             al = al.reshape( 1, len( al ) )
             m_p = a_shaped / al
@@ -290,7 +285,7 @@ class CompositeCrackBridge( HasTraits ):
             depsmax = self.sorted_depsf[0]
             Ef = self.sorted_E_f
             a = np.linspace( 0, np.min( ( self.amin_it[-1] * 1.2, Lmax + 1e-6 ) ) , self.discr_amin )
-            Kf = self.Kf
+            Kf = Vf * self.sorted_nu_r * self.sorted_stats_weights * Ef * self.soc
             a_shaped = a.reshape( len( a ), 1 )
             al = al.reshape( 1, len( al ) )
             m_p = a_shaped / al
@@ -321,7 +316,8 @@ class CompositeCrackBridge( HasTraits ):
         '''evaluates the deps_m given deps_f
         at that point and the damage array'''
         # ##
-        Kf = self.Kf
+        Kf = self.sorted_V_f * self.sorted_nu_r * \
+            self.sorted_stats_weights * self.sorted_E_f * self.soc
         
         Kf_broken = np.sum( Kf * damage )
         al = self.sorted_l_ez
@@ -382,7 +378,7 @@ class CompositeCrackBridge( HasTraits ):
             al = self.sorted_l_ez[idx + 1:] 
             # print al
             a = np.linspace( a1, self._a_long[idx + 1] * 1.2  , self.discr_amin )
-            Kf = self.Kf
+            Kf = Vf * self.sorted_nu_r * self.sorted_stats_weights * Ef * self.soc
             a_shaped = a.reshape( len( a ), 1 )
             al = al.reshape( 1, len( al ) )
             m_p = a_shaped / al
@@ -417,9 +413,32 @@ class CompositeCrackBridge( HasTraits ):
         emipt = interp1d( self._x_arr, self._epsm_arr, bounds_error = False, fill_value = self._epsm_arr[-1] ) 
         res = depsf * ( 2. - a / al ) / 2.*a + emipt( a )
         return res
+    '''
+    def epsf0_sf1( self ):
+        epsf0_ls = []
+        al_discr = 10
+        a = self._a_long [self.sf_mask]
+        al = self.sorted_l_ez
+        mask = ( a < al )
+        depsf = self.sorted_depsf[self.sf_mask]
+        # phy_cond_mask = ( a < al )
+        # a = a * phy_cond_mask + al * ( 1 - phy_cond_mask )
+        em_interp1d = interp1d( self._x_arr, self._epsm_arr, bounds_error = False, fill_value = 0. )
+        for i, depsfi in enumerate( depsf ):
+                if mask[i]:
+                    al_discr = np.linspace( 0, a[i], 10 )
+                    print a[i]
+                    epsf0 = np.mean( em_interp1d( al_discr ) + depsfi * al_discr, )     
+                else:
+                    ratio = 1 - al[i] / a[i]
+                    al_discr = np.linspace( 0, al[i], 10 )
+                    epsf0_sa = np.mean( em_interp1d( al_discr ) + depsfi * al_discr )
+                    epsf0_ba = em_interp1d( al[i] ) + depsfi * al[i]
+                    epsf0 = epsf0_sa * ratio + epsf0_ba * ( 1 - ratio )
+                epsf0_ls.append( epsf0 )
+        return np.array( epsf0_ls )
 
-
-    
+    '''
     if 0 == 0:
         def profile( self, iter_damage, Lmin, Lmax ):
             # matrix strain derivative with resp. to z as a function of T
@@ -460,7 +479,7 @@ class CompositeCrackBridge( HasTraits ):
                 umR = np.trapz( np.hstack( ( 0, r_em ) ), r_a )
                 vxL = ( self.w - Lmin * l_em[0] - Lmax * r_em[-1] + umL + umR - self.sorted_depsf * ( Lmin ** 2 + Lmax ** 2 ) / 2 - \
                         Lmax * ( l_em[0] + ( Lmin - Lmax ) * self.sorted_depsf - em[-1] ) ) / ( Lmin + Lmax )
-                epsf0 = ( Lmin * self.sorted_depsf + vxL + l_em[0] ) 
+                epsf0 = ( Lmin * self.sorted_depsf + vxL + l_em[0] ) * ( 1 - self.c_mask )
             elif Lmin < a1[0] and Lmax >= a1[0]:
                 # all fibers debonded up to Lmax but not up to Lmin
                 min_a = np.sum( ( Lmin - a_geo ) > 0 )
@@ -607,27 +626,19 @@ class CompositeCrackBridge( HasTraits ):
     damage = Property( depends_on = 'w, Ll, Lr, reinforcement+' )
     @cached_property
     def _get_damage( self ):
-        if self.Ll > 1e6:
-                    self.Ll = 1e6
-        if self.Lr > 1e6:
-                    self.Lr = 1e6
-        print self.w, self.Ll, self.Lr
         if self.w == 0.:
             damage = np.zeros_like( self.sorted_depsf )
-            self._x_arr = np.hstack( ( np.repeat( self.Ll, len( self.sorted_depsf ) ), 0, np.repeat( self.Lr, len( self.sorted_depsf ) ) ) )
-            self._epsm_arr = np.array( np.repeat( 1e-6, 1 + 2 * len( self.sorted_depsf ) ) )
-            self._epsf0_arr = np.repeat( 1e-6, len( self.sorted_depsf ) )
         else:
             ff = t.clock()
             try:
                 self.set_sfarr_to_defaults()
-                damage = root( self.damage_residuum, np.ones_like( self.sorted_depsf ) * 0.2,
-                              method = 'excitingmixing', options = {'maxiter':100} )
+                damage = root( self.damage_residuum, self._first_guess, method = 'excitingmixing' )
                 if np.any( damage.x < 0.0 ) or np.any( damage.x > 1.0 ):
                     raise ValueError
                 damage = damage.x
             except:
                 print 'fast opt method does not converge: switched to a slower, robust method for this step'
+                
                 damage = root( self.damage_residuum, self._first_guess, method = 'krylov' )
                 damage = damage.x
             # print 'damage =', np.sum(damage) / len(damage), 'iteration time =', t.clock() - ff, 'sec'
@@ -638,26 +649,27 @@ if __name__ == '__main__':
                           tau = RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
                           V_f = 0.03,
                           E_f = 240e3,
-                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
-                          n_int = 50,
+                          xi = WeibullFibers( shape = 5.0, sV0 = 10.0026 ),
+                          n_int = 1,
                           label = 'carbon' )
 
     reinfSF = ShortFibers( r = 0.3 ,
                           tau = 1.76,
                           lf = 100.,
-                          snub = .3,
+                          snub = .03,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),
                           V_f = 0.02,
                           E_f = 200e3,
                           xi = 100.,  # WeibullFibers( shape = 1000., scale = 1000 ),
-                          n_int = 50,
+                          n_int = 200,
                           label = 'Short Fibers' )
     
     ccb = CompositeCrackBridge( E_m = 25e3,
                                  reinforcement_lst = [reinfSF, reinf1],
-                                 Ll = 1,
-                                 Lr = 1,
-                                 w = .5 )
+                                 Ll = 1000,
+                                 Lr = 1000,
+                                 w = 0.2,
+                                 discr_amin = 50 )
 
 #    reinf = ContinuousFibers(r=0.01,
 #                          tau=RV('uniform', loc=0.01, scale=.5),
@@ -674,10 +686,10 @@ if __name__ == '__main__':
 #                                 w=0.004)
     ccb.damage
     plt.plot( ccb._x_arr, ccb._epsm_arr, lw = 1, color = 'k', label = 'analytical' )  # , ls = 'dashed' )
-    plt.plot( np.zeros_like( ccb._epsf0_arr[ccb.c_mask] ), ccb._epsf0_arr[ccb.c_mask], 'ro' )
-    # for i, depsf in enumerate( ccb.sorted_depsf ):
-    #    if ccb.sorted_lf[i] == np.infty and i % 100 == 0:
-    #       plt.plot( ccb._x_arr, np.maximum( ccb._epsf0_arr[i] - depsf * np.abs( ccb._x_arr ), ccb._epsm_arr ) , 'k' )
+    plt.plot( np.zeros_like( ccb._epsf0_arr ), ccb._epsf0_arr, 'ro' )
+    for i, depsf in enumerate( ccb.sorted_depsf ):
+        if ccb.sorted_lf[i] == np.infty and i % 100 == 0:
+           plt.plot( ccb._x_arr, np.maximum( ccb._epsf0_arr[i] - depsf * np.abs( ccb._x_arr ), ccb._epsm_arr ) , 'k' )
     plt.legend( loc = 'best' )
     # plt.xlim( -1.05 * max( ccb.Ll, ccb.Lr ), max( ccb.Ll, ccb.Lr ) * 1.05 ) 
     plt.xlim( 0, 20. ) 
@@ -688,6 +700,5 @@ if __name__ == '__main__':
     print 'epsf0', np.sum( ccb._epsf0_arr * ccb.sorted_stats_weights * ccb.sorted_V_f * 
                       ccb.sorted_nu_r * ccb.sorted_E_f * ( 1. - ccb.damage ) )
     print 'epsm', ccb._epsm_arr[-1] * ccb.E_c
-    print ccb.damage
     # print ccb.E_c
     plt.show()
