@@ -169,7 +169,8 @@ class SCM( HasTraits ):
         # realization and creates a spline reprezentation
         rf = self.random_field.random_field
         rf_spline = MFnLineArray( xdata = self.random_field.xgrid, ydata = rf )
-        return rf_spline.get_values( self.x_arr )
+        ms = rf_spline.get_values( self.x_arr )
+        return ms
 
     def sort_cbs( self ):
         # sorts the CBs by position and adjusts the boundary conditions
@@ -237,6 +238,7 @@ class SCM( HasTraits ):
                 left = crack_position_idx - len( np.nonzero( cb.x < 0. )[0] )
                 right = crack_position_idx + len( np.nonzero( cb.x > 0. )[0] ) + 1
                 sigma_m[left:right] = cb.get_epsm_x_w( float( load ) ) * Em
+        # print 'sigma_m', sigma_m
         return sigma_m
 
     def epsf_x( self, load ):
@@ -253,6 +255,10 @@ class SCM( HasTraits ):
 
     def residuum( self, q ):
         residuum = np.min( self.matrix_strength - self.sigma_m( q ) )
+        plt.plot( self.x_arr, self.matrix_strength )
+        plt.plot( self.x_arr, self.sigma_m( q ) )
+        plt.show()
+        print 'residuum', residuum
         return residuum
 
     def evaluate( self ):
@@ -292,7 +298,7 @@ class SCM( HasTraits ):
 
 if __name__ == '__main__':
     length = 2000.
-    nx = 100
+    nx = 1000
     random_field = RandomField( seed = True,
                                lacor = 5.,
                                 xgrid = np.linspace( 0., length, 400 ),

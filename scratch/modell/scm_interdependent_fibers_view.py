@@ -117,7 +117,7 @@ class SCMView( ModelView ):
 
 if __name__ == '__main__':
     length = 2000.
-    nx = 30
+    nx = 70
     random_field = RandomField( seed = True,
                                lacor = 5.,
                                 xgrid = np.linspace( 0., length, 400 ),
@@ -131,18 +131,17 @@ if __name__ == '__main__':
 
     reinf = ContinuousFibers( r = 0.0035,
                           tau = RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
-                          V_f = 0.03,
+                          V_f = 0.02,
                           E_f = 240e3,
                           xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
-                          n_int = 50,
                           label = 'carbon' )
-    
+
     reinfSF = ShortFibers( r = 0.3 ,
                           tau = 1.76,
-                          lf = 100.,
-                          snub = .03,
+                          lf = 17.,
+                          snub = .3,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),
-                          V_f = 0.02,
+                          V_f = 0.01,
                           E_f = 200e3,
                           xi = 100.,  # WeibullFibers( shape = 1000., scale = 1000 ),
                           label = 'Short Fibers' )
@@ -155,7 +154,7 @@ if __name__ == '__main__':
               nx = nx,
               random_field = random_field,
               CB_model = CB_model,
-              load_sigma_c_arr = np.linspace( 0.01, 15., 5 ),
+              load_sigma_c_arr = np.linspace( 0.01, 15., 10 ),
               )
 
     scm_view = SCMView( model = scm )
@@ -170,9 +169,9 @@ if __name__ == '__main__':
         plt.ylabel( 'composite stress [MPa]' )
         plt.figure()
         crackwidths = [16., 13., 10.]
-        plt.hist( scm_view.crack_widths( crackwidths[0] ), bins = 20, label = 'load = {} MPa'.format( crackwidths[0] ) )
-        plt.hist( scm_view.crack_widths( crackwidths[1] ), bins = 20, label = 'load = {} MPa'.format( crackwidths[1] ) )
-        plt.hist( scm_view.crack_widths( crackwidths[2] ), bins = 20, label = 'load = {} MPa'.format( crackwidths[1] ) )
+        # plt.hist( scm_view.crack_widths( crackwidths[0] ), bins = 20, label = 'load = {} MPa'.format( crackwidths[0] ) )
+        # plt.hist( scm_view.crack_widths( crackwidths[1] ), bins = 20, label = 'load = {} MPa'.format( crackwidths[1] ) )
+        # plt.hist( scm_view.crack_widths( crackwidths[2] ), bins = 20, label = 'load = {} MPa'.format( crackwidths[1] ) )
         plt.legend( loc = 'best' )
         plt.figure()
         plt.plot( scm_view.model.load_sigma_c_arr, scm_view.w_mean,

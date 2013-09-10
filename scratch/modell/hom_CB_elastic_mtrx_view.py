@@ -26,16 +26,20 @@ class CompositeCrackBridgeView( ModelView ):
         # if self.model.w <= 0.0:
         #    self.model.w = 1e-15
         self.model.damage
-        sigma_c = np.sum( self.model._epsf0_arr * self.model.sorted_stats_weights * self.model.sorted_V_f * 
-                      self.model.sorted_nu_r * self.model.sorted_E_f * ( 1. - self.model.damage ) )
-        condition = ( np.sum( self.model.damage[self.model.c_mask] ) / np.sum( self.model.c_mask ) > 0.90 )
-        if condition:
-            sigma_c = 0.
+        sigma_c = np.sum( self.model._epsf0_arr * self.model.Kf * ( 1. - self.model.damage ) )
+        condition = ( np.sum( self.model.damage[self.model.c_mask] ) / np.sum( self.model.c_mask ) > 1 - 1e-12 )
         Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
             self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
         E_mtrx = ( 1. - self.model.V_f_tot ) * self.model.E_m + Kf_broken
         mu_epsf_arr = ( sigma_c - E_mtrx * self.model._epsm_arr ) / ( self.model.E_c - E_mtrx )
-        print 'sigma_c', sigma_c
+        if condition:
+            sigma_c = 1e-6
+            mu_epsf_arr = 1e-6 * np.ones_like( mu_epsf_arr )
+            E_mtrx = self.model.E_m * np.ones_like( mu_epsf_arr )
+        # Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
+        #    self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
+        
+        # print E_mtrx , self.model._epsm_arr 
         if self.model.Ll > self.model.Lr:
             return -self.model._x_arr[::-1], self.model._epsm_arr[::-1], sigma_c, mu_epsf_arr[::-1], E_mtrx
         else:
@@ -99,18 +103,20 @@ class CompositeCrackBridgeView( ModelView ):
         def residuum_stiffness( w ):
             self.model.w = w
             stiffness_loss = np.sum( self.model.Kf[self.model.c_mask] * self.model.damage[self.model.c_mask] ) / np.sum( self.model.Kf[self.model.c_mask] )
+            print 'stiffness_los', stiffness_loss 
             if stiffness_loss > 0.90:
-                print '>90'
-                return w * 1e10
+                print 'im here in nowhere'
+                return w * 1e10 
             if stiffness_loss < 0.65 and stiffness_loss > 0.45:
-                print '>90'
+                print 'right point'
                 residuum = 0.0
             else:
-                print 'standard'
+                print 'beginning'
                 residuum = stiffness_loss - 0.5
             return residuum
-        w_max = brentq( residuum_stiffness, 0.0, min( ( self.model.Ll + self.model.Lr ), 1. ) )
-        w_points = np.linspace( 0, w_max, 7 )
+        w_max = brentq( residuum_stiffness, 0.0, min( ( self.model.Ll + self.model.Lr ), .2 ) )
+        print 'WMAX_MAN', w_max
+        w_points = np.linspace( 1e-6, w_max, 10 )
         w_maxima = []
         sigma_maxima = []
         for i, w in enumerate( w_points[1:] ):
@@ -241,25 +247,25 @@ if __name__ == '__main__':
     
 
 
-    reinf1 = ContinuousFibers( r = 0.00345,
-                          tau = RV( 'uniform', loc = 0.01, scale = 0.1 ),
-                          V_f = 0.01,
-                          E_f = 180e3,
-                          xi = WeibullFibers( shape = 4., sV0 = 0.0025 ),
-                          n_int = 10,
+    reinf1 = ContinuousFibers( r = 0.0035,
+                          tau = RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
+                          V_f = 0.02,
+                          E_f = 240e3,
+                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
+                          n_int = 300,
                           label = 'carbon' )
 
-    
-    reinfSF = ShortFibers( r = 0.1,
-                          tau = 1.,
-                          lf = 30.,
-                          snub = 3.,
-                          phi = RV( 'sin2x', loc = 0., scale = 1. ),
+    reinfSF = ShortFibers( r = 0.03 ,
+                          tau = 1.76,
+                          lf = 17.,
+                          snub = .03,
+                          phi = RV( 'sin2x', loc = 0., scale = 1. ),  # RV( 'uniform', loc = 0., scale = 1e-12 ),
                           V_f = 0.01,
-                          E_f = 180e3,
-                          xi = 100.,  # WeibullFibers( shape = 1000., scale = 1000 ),
-                          n_int = 10,
+                          E_f = 200e3,
+                          xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
+                          n_int = 100,
                           label = 'Short Fibers' )
+    
 
 
     model = CompositeCrackBridge( E_m = 25e3,
@@ -325,7 +331,7 @@ if __name__ == '__main__':
 #        ccb_view.apply_load(s)
 #        profile(ccb_view.model.w)
     w = np.linspace( 0., .1, 80 )
-    sigma_c_w( w )
+    # sigma_c_w( w )
     # energy(w)
     # bundle at 20 mm
     # sigma_bundle = 70e3*w/20.*np.exp(-(w/20./0.03)**5.)
