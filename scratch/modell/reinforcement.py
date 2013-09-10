@@ -102,13 +102,18 @@ class ShortFibers( Reinforcement ):
         tau = self.tau
         r = self.r
         lf = self.lf
-        phi = self.phi.ppf( discr_ppf )
-        tau = tau * np.exp( H( self.snub < ( pi / 3. ) ) * phi ) * np.exp( H( self.snub > ( pi / 3. ) ) * pi / 3. )
+        if type( self.phi ) == type( r ):
+            phi = self.phi
+        else:
+            phi = self.phi.ppf( discr_ppf )
+        tau = tau * ( H( phi < ( pi / 3. ) ) * np.exp( phi * self.snub ) + H( phi > ( pi / 3. ) ) * np.exp( self.snub * pi / 3. ) )
         stat_weights *= 1. / self.n_int
-        T = ( 2. * tau / r / self.E_f / np.cos( phi ) )
+        Aphi = pi * r ** 2 / np.cos( phi )
+        llambda = ( r - r / np.cos( phi ) ) / ( r + r / np.cos( phi ) )
+        Uphi = pi * ( r + r / np.cos( phi ) ) * ( 1. + 3.*llambda ** 2. / ( 10. + ( 4 - 3. * llambda ** 2. ) ) )
+        T = ( Uphi / Aphi * tau / self.E_f )
         nu_r = np.ones_like( tau )
         r_arr = self.r * nu_r
-        
         return T.flatten(), stat_weights, nu_r, r_arr, lf, phi
 
     depsf_arr = Property( depends_on = 'r, V_f, E_f, xi, tau, n_int' )

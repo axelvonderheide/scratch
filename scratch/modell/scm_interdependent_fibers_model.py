@@ -148,7 +148,7 @@ class SCM( HasTraits ):
     def _interpolator_default( self ):
         return Interpolator( CB_model = self.CB_model,
                             load_sigma_c_arr = self.load_sigma_c_arr,
-                            length = self.length, n_w = 50, n_BC = 15, n_x = 100
+                            length = self.length, n_w = 30, n_BC = 10, n_x = 80
                             )
 
     sigma_c_crack = List
@@ -169,8 +169,7 @@ class SCM( HasTraits ):
         # realization and creates a spline reprezentation
         rf = self.random_field.random_field
         rf_spline = MFnLineArray( xdata = self.random_field.xgrid, ydata = rf )
-        ms = rf_spline.get_values( self.x_arr )
-        return ms
+        return rf_spline.get_values( self.x_arr )
 
     def sort_cbs( self ):
         # sorts the CBs by position and adjusts the boundary conditions
@@ -238,7 +237,6 @@ class SCM( HasTraits ):
                 left = crack_position_idx - len( np.nonzero( cb.x < 0. )[0] )
                 right = crack_position_idx + len( np.nonzero( cb.x > 0. )[0] ) + 1
                 sigma_m[left:right] = cb.get_epsm_x_w( float( load ) ) * Em
-        # print 'sigma_m', sigma_m
         return sigma_m
 
     def epsf_x( self, load ):
@@ -255,10 +253,7 @@ class SCM( HasTraits ):
 
     def residuum( self, q ):
         residuum = np.min( self.matrix_strength - self.sigma_m( q ) )
-        plt.plot( self.x_arr, self.matrix_strength )
-        plt.plot( self.x_arr, self.sigma_m( q ) )
-        plt.show()
-        print 'residuum', residuum
+        print residuum, min( self.matrix_strength ), q
         return residuum
 
     def evaluate( self ):
@@ -291,14 +286,14 @@ class SCM( HasTraits ):
 #            plt.plot(self.x_arr, self.matrix_strength / self.CB_model.E_m, color='black', lw=2)
 #            plt.show()
             if float( crack_position ) == last_pos:
-                print last_pos , 'last_pos'
+                print last_pos
                 raise ValueError( '''got stuck in loop,
                 try to adapt x, w, BC ranges''' )
             last_pos = float( crack_position )
 
 if __name__ == '__main__':
     length = 2000.
-    nx = 1000
+    nx = 150
     random_field = RandomField( seed = True,
                                lacor = 5.,
                                 xgrid = np.linspace( 0., length, 400 ),
@@ -316,26 +311,16 @@ if __name__ == '__main__':
                           E_f = 240e3,
                           xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
                           label = 'carbon' )
-    
-    reinfSF = ShortFibers( r = 0.3 ,
-                          tau = 1.76,
-                          lf = 100.,
-                          snub = .03,
-                          phi = RV( 'sin2x', loc = 0., scale = 1. ),
-                          V_f = 0.02,
-                          E_f = 200e3,
-                          xi = 100.,  # WeibullFibers( shape = 1000., scale = 1000 ),
-                          label = 'Short Fibers' )
 
     CB_model = CompositeCrackBridge( E_m = 25e3,
-                                 reinforcement_lst = [reinf, reinfSF],
+                                 reinforcement_lst = [reinf],
                                  )
 
     scm = SCM( length = length,
               nx = nx,
               random_field = random_field,
               CB_model = CB_model,
-              load_sigma_c_arr = np.linspace( 0.01, 15., 3 ),
+              load_sigma_c_arr = np.linspace( 0.01, 25., 100 ),
               )
 
     scm.evaluate()

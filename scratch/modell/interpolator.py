@@ -34,7 +34,6 @@ class Interpolator( HasTraits ):
         return CompositeCrackBridgeView( model = self.CB_model )
 
     def max_sigma_w( self, Ll, Lr ):
-        print Ll, Lr
         self.CB_model_view.model.Ll = Ll
         self.CB_model_view.model.Lr = Lr
         max_sigma_c, max_w = self.CB_model_view.sigma_c_max
@@ -122,7 +121,6 @@ class Interpolator( HasTraits ):
 
     def interpolate_max_sigma_c( self, Ll, Lr ):
         L_l, L_r = self.get_L( Ll, Lr )
-        print L_l, L_r
         L_l = self.BC_range[np.argwhere( L_l <= self.BC_range )[0]]
         L_r = self.BC_range[np.argwhere( L_r <= self.BC_range )[0]]
         interp = interp2d( self.BC_range, self.BC_range, self.result_values[3] )

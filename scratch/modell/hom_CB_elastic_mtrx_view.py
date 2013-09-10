@@ -38,8 +38,6 @@ class CompositeCrackBridgeView( ModelView ):
             E_mtrx = self.model.E_m * np.ones_like( mu_epsf_arr )
         # Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
         #    self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
-        
-        # print E_mtrx , self.model._epsm_arr 
         if self.model.Ll > self.model.Lr:
             return -self.model._x_arr[::-1], self.model._epsm_arr[::-1], sigma_c, mu_epsf_arr[::-1], E_mtrx
         else:
@@ -93,30 +91,26 @@ class CompositeCrackBridgeView( ModelView ):
     sigma_c_max = Property( depends_on = 'model.E_m, model.w, model.Ll, model.Lr, model.reinforcement_lst+' )
     @cached_property
     def _get_sigma_c_max( self ):
+        w_max_max = min( ( self.model.Ll + self.model.Lr ), 20. )
         def minfunc_sigma( w ):
             self.model.w = w
             stiffness_loss = np.sum( self.model.Kf * self.model.damage ) / np.sum( self.model.Kf )
             if stiffness_loss > 0.90:
-                return w * 1e10
+                return 1. + w
             # plt.plot(w, self.sigma_c, 'ro')
             return -self.sigma_c
         def residuum_stiffness( w ):
             self.model.w = w
             stiffness_loss = np.sum( self.model.Kf[self.model.c_mask] * self.model.damage[self.model.c_mask] ) / np.sum( self.model.Kf[self.model.c_mask] )
-            print 'stiffness_los', stiffness_loss 
             if stiffness_loss > 0.90:
-                print 'im here in nowhere'
-                return w * 1e10 
+                return 1. + w
             if stiffness_loss < 0.65 and stiffness_loss > 0.45:
-                print 'right point'
                 residuum = 0.0
             else:
-                print 'beginning'
                 residuum = stiffness_loss - 0.5
             return residuum
-        w_max = brentq( residuum_stiffness, 0.0, min( ( self.model.Ll + self.model.Lr ), .2 ) )
-        print 'WMAX_MAN', w_max
-        w_points = np.linspace( 1e-6, w_max, 10 )
+        w_max = brentq( residuum_stiffness, 0.0, w_max_max )
+        w_points = np.linspace( 0., w_max, 5 )
         w_maxima = []
         sigma_maxima = []
         for i, w in enumerate( w_points[1:] ):
@@ -252,7 +246,7 @@ if __name__ == '__main__':
                           V_f = 0.02,
                           E_f = 240e3,
                           xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
-                          n_int = 300,
+                          n_int = 100,
                           label = 'carbon' )
 
     reinfSF = ShortFibers( r = 0.03 ,
