@@ -715,9 +715,9 @@ if __name__ == '__main__':
     
     ccb = CompositeCrackBridge( E_m = 25e3,
                                  reinforcement_lst = [reinfSF, reinf1],  # , reinf1],
-                                 Ll = 1.0,
+                                 Ll = 8.0,
                                  Lr = 1.0,
-                                 w = 1. )
+                                 w = 160. )
 
     ccb.damage
     sigma = np.sum( ccb._epsf0_arr * ccb.Kf * ( 1. - ccb.damage ) )

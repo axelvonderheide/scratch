@@ -117,7 +117,7 @@ class SCMView( ModelView ):
 
 if __name__ == '__main__':
     length = 2000.
-    nx = 100
+    nx = 1000
     random_field = RandomField( seed = True,
                                lacor = 5.,
                                 xgrid = np.linspace( 0., length, 400 ),
@@ -152,6 +152,9 @@ if __name__ == '__main__':
 
     scm = SCM( length = length,
               nx = nx,
+              n_w_interp = 50,
+              n_BC_interp = 15,
+              n_x_interp = 100,
               random_field = random_field,
               CB_model = CB_model,
               load_sigma_c_arr = np.linspace( 0.01, 14., 100 ),
@@ -168,9 +171,9 @@ if __name__ == '__main__':
         plt.xlabel( 'composite strain [-]' )
         plt.ylabel( 'composite stress [MPa]' )
         plt.figure()
-        plt.hist( scm_view.crack_widths( 16. ), bins = 20, label = 'load = 20 MPa' )
-        plt.hist( scm_view.crack_widths( 13. ), bins = 20, label = 'load = 15 MPa' )
-        plt.hist( scm_view.crack_widths( 10. ), bins = 20, label = 'load = 10 MPa' )
+        plt.hist( scm_view.crack_widths( 2. ), bins = 20, label = 'load = 20 MPa' )
+        plt.hist( scm_view.crack_widths( 3. ), bins = 20, label = 'load = 15 MPa' )
+        plt.hist( scm_view.crack_widths( 4. ), bins = 20, label = 'load = 10 MPa' )
         plt.legend( loc = 'best' )
         plt.figure()
         plt.plot( scm_view.model.load_sigma_c_arr, scm_view.w_mean,
