@@ -38,6 +38,7 @@ class CompositeCrackBridgeView( ModelView ):
             E_mtrx = self.model.E_m * np.ones_like( mu_epsf_arr )
         # Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
         #    self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
+        mu_epsf_arr = np.maximum( mu_epsf_arr, self.model._epsm_arr )
         if self.model.Ll > self.model.Lr:
             return -self.model._x_arr[::-1], self.model._epsm_arr[::-1], sigma_c, mu_epsf_arr[::-1], E_mtrx
         else:
@@ -249,7 +250,7 @@ if __name__ == '__main__':
                           n_int = 100,
                           label = 'carbon' )
 
-    reinfSF = ShortFibers( r = 0.03 ,
+    reinfSF = ShortFibers( r = 0.3 ,
                           tau = 1.76,
                           lf = 17.,
                           snub = .03,
@@ -264,8 +265,8 @@ if __name__ == '__main__':
 
     model = CompositeCrackBridge( E_m = 25e3,
                                  reinforcement_lst = [reinfSF, reinf1],
-                                 Ll = 1.,
-                                 Lr = 1. )
+                                 Ll = 4.,
+                                 Lr = 200. )
     
 
     ccb_view = CompositeCrackBridgeView( model = model )
@@ -324,8 +325,8 @@ if __name__ == '__main__':
 #    for i, s in enumerate(sigma_c):
 #        ccb_view.apply_load(s)
 #        profile(ccb_view.model.w)
-    w = np.linspace( 0., .1, 80 )
-    # sigma_c_w( w )
+    w = np.linspace( 0., .1, 40 )
+    sigma_c_w( w )
     # energy(w)
     # bundle at 20 mm
     # sigma_bundle = 70e3*w/20.*np.exp(-(w/20./0.03)**5.)
