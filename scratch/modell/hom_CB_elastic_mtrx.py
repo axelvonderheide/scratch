@@ -635,9 +635,12 @@ class CompositeCrackBridge( HasTraits ):
     def damage_residuum( self, iter_damage ):
         Lmin = min( self.Ll, self.Lr )
         Lmax = max( self.Ll, self.Lr )
-        epsf0, x_short, x_long = self.profile( iter_damage, Lmin, Lmax )
-        residuum = self.vect_xi_cdf( epsf0, x_short = x_short, x_long = x_long ) - iter_damage
-        return residuum
+        iter_damage_all = np.array( self.c_mask ) * 1.
+        iter_damage_all[self.c_mask] = iter_damage
+        iter_damage_all = np.array( iter_damage_all )
+        epsf0, x_short, x_long = self.profile( iter_damage_all, Lmin, Lmax )
+        residuum = self.vect_xi_cdf( epsf0, x_short = x_short, x_long = x_long ) - iter_damage_all
+        return residuum[self.c_mask]
     _x_arr = Array
     def __x_arr_default( self ):
         cs = np.cumsum( np.repeat( 10., len( self.sorted_depsf ) + 1 ) )
@@ -659,9 +662,6 @@ class CompositeCrackBridge( HasTraits ):
     def __epsf0_arr_default( self ):
         return np.repeat( 1e-10, len( self.sorted_depsf ) )
     
-    _first_guess = Array
-    def __first_guess_default( self ):
-        return  np.ones_like( self.sorted_depsf ) * 0.2 * self.c_mask
     
     def set_sfarr_to_defaults( self ):
         self._a_long = self.__a_long_default()
@@ -671,13 +671,14 @@ class CompositeCrackBridge( HasTraits ):
     damage = Property( depends_on = 'w, Ll, Lr, reinforcement+' )
     @cached_property
     def _get_damage( self ):
+        damage_all = np.array( self.c_mask ) * 1.
         if self.Ll > 1e6:
                     self.Ll = 1e6
         if self.Lr > 1e6:
                     self.Lr = 1e6
-        print'w,Lmin,Lmax', self.w, self.Ll, self.Lr
+        # print'w,Lmin,Lmax', self.w, self.Ll, self.Lr
         if self.w == 0.:
-            damage = np.zeros_like( self.sorted_depsf )
+            damage = np.zeros_like( self.sorted_depsf[self.c_mask] )
             self._x_arr = np.hstack( ( np.repeat( self.Ll, len( self.sorted_depsf ) ), 0, np.repeat( self.Lr, len( self.sorted_depsf ) ) ) )
             self._epsm_arr = np.array( np.repeat( 1e-6, 1 + 2 * len( self.sorted_depsf ) ) )
             self._epsf0_arr = np.repeat( 1e-6, len( self.sorted_depsf ) )
@@ -686,7 +687,7 @@ class CompositeCrackBridge( HasTraits ):
             ff = t.clock()
             try:
                 self.set_sfarr_to_defaults()
-                damage = root( self.damage_residuum, np.ones_like( self.sorted_depsf ) * 0.2,
+                damage = root( self.damage_residuum, damage_all[self.c_mask] * 0.2,
                               method = 'excitingmixing', options = {'maxiter':100} )
                 # damage = root( self.damage_residuum, np.ones_like( self.sorted_depsf ) * 0.2 ,
                 #              method = 'excitingmixing', options = {'maxiter':100} )
@@ -695,10 +696,13 @@ class CompositeCrackBridge( HasTraits ):
                 damage = damage.x
             except:
                 print 'fast opt method does not converge: switched to a slower, robust method for this step'
-                damage = root( self.damage_residuum, self._first_guess, method = 'krylov' )
+                damage = root( self.damage_residuum, damage_all[self.c_mask] * 0.2, method = 'krylov' )
                 damage = damage.x
             # print 'damage =', np.sum(damage) / len(damage), 'iteration time =', t.clock() - ff, 'sec'
-        return damage
+        damage_all[self.c_mask] = damage
+        # print 'damage outside', damage_all, 'dmg_arr outside', damage
+        return damage_all
+    
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
     reinf1 = ContinuousFibers( r = 0.0035,
@@ -706,7 +710,7 @@ if __name__ == '__main__':
                           V_f = 0.02,
                           E_f = 240e3,
                           xi = WeibullFibers( shape = 5.0, sV0 = 0.0017 ),
-                          n_int = 100,
+                          n_int = 1000,
                           label = 'carbon' )
 
     reinfSF = ShortFibers( r = 0.3 ,
@@ -717,7 +721,7 @@ if __name__ == '__main__':
                           V_f = 0.01,
                           E_f = 200e3,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
-                          n_int = 100,
+                          n_int = 1000,
                           label = 'Short Fibers' )
     
     ccb = CompositeCrackBridge( E_m = 25e3,
