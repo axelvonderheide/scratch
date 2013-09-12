@@ -710,7 +710,7 @@ if __name__ == '__main__':
                           V_f = 0.02,
                           E_f = 240e3,
                           xi = WeibullFibers( shape = 5.0, sV0 = 0.0017 ),
-                          n_int = 1000,
+                          n_int = 100,
                           label = 'carbon' )
 
     reinfSF = ShortFibers( r = 0.3 ,
@@ -721,7 +721,7 @@ if __name__ == '__main__':
                           V_f = 0.01,
                           E_f = 200e3,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
-                          n_int = 1000,
+                          n_int = 100,
                           label = 'Short Fibers' )
     
     ccb = CompositeCrackBridge( E_m = 25e3,

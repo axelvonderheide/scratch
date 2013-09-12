@@ -257,7 +257,7 @@ class SCM( HasTraits ):
     piees = Bool( True )
     def residuum( self, q ):
         residuum = np.min( self.matrix_strength - self.sigma_m( q ) )
-        if self.piers:
+        if self.counter > 23:
             plt.plot( self.x_arr, self.epsf_x( q ), color = 'red', lw = 2 )
             plt.plot( self.x_arr, self.sigma_m( q ) / self.CB_model.E_m, color = 'blue', lw = 2 )
             plt.plot( self.x_arr, self.matrix_strength / self.CB_model.E_m, color = 'black', lw = 2 )
@@ -266,7 +266,7 @@ class SCM( HasTraits ):
             plt.show()
             
         return residuum
-
+    counter = Int( 0 )
     def evaluate( self ):
         # seek for the minimum strength redundancy to find the position
         # of the next crack
@@ -276,6 +276,7 @@ class SCM( HasTraits ):
         while np.any( self.sigma_m( sigc_max ) > self.matrix_strength ):
             s = t.clock()
             sigc_min = brentq( self.residuum, sigc_min, sigc_max )
+            self.counter += 1
             # sigc_min = sigc_min1 * 0.9
             print 'evaluation of the next matrix crack ', t.clock() - s, 's'
             crack_position = self.x_arr[np.argmin( self.matrix_strength - 
@@ -335,7 +336,7 @@ if __name__ == '__main__':
               nx = nx,
               random_field = random_field,
               CB_model = CB_model,
-              load_sigma_c_arr = np.linspace( 0.01, 25., 100 ),
+              load_sigma_c_arr = np.linspace( 0.01, 15., 100 ),
               )
 
     scm.evaluate()

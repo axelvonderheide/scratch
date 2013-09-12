@@ -220,7 +220,7 @@ class CompositeCrackBridgeView( ModelView ):
         u_arr = np.array( u_lst )
         F_arr = np.array( F_lst )
         U_line = MFnLineArray( xdata = w_arr, ydata = np.hstack( ( 0, cumtrapz( F_arr, u_arr ) ) ) )
-        return U_line
+        return U_lineself.piers
 
     U = Property( depends_on = 'model.E_m, model.Ll, model.Lr, model.reinforcement_lst+, model.w' )
     @cached_property
@@ -326,7 +326,7 @@ if __name__ == '__main__':
 #    for i, s in enumerate(sigma_c):
 #        ccb_view.apply_load(s)
 #        profile(ccb_view.model.w)
-    w = np.linspace( 0, .5, 100 )
+    w = np.linspace( 0, .0015, 100 )
     sigma_c_w( w )
     # energy(w)
     # bundle at 20 mm

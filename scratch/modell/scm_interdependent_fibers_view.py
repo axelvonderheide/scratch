@@ -116,11 +116,11 @@ class SCMView( ModelView ):
             return eps, self.model.load_sigma_c_arr
 
 if __name__ == '__main__':
-    length = 2000.
-    nx = 400
+    length = 1000.
+    nx = 4000
     random_field = RandomField( seed = True,
-                               lacor = 100.,
-                                xgrid = np.linspace( 0., length, 400 ),
+                               lacor = 5.,
+                                xgrid = np.linspace( 0., length, 500 ),
                                 nsim = 1,
                                 loc = .0,
                                 shape = 25.,
@@ -141,7 +141,7 @@ if __name__ == '__main__':
                           lf = 17.,
                           snub = .03,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),  # RV( 'uniform', loc = 0., scale = 1e-12 ),
-                          V_f = 0.000000001,
+                          V_f = 0.011,
                           E_f = 200e3,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
                           label = 'Short Fibers' )
@@ -153,7 +153,7 @@ if __name__ == '__main__':
               nx = nx,
               n_w_interp = 50,
               n_BC_interp = 15,
-              n_x_interp = 100,
+              n_x_interp = 200,
               piees = False,
               piers = False,
               random_field = random_field,
