@@ -14,7 +14,7 @@ The evaluation is array based.
 import numpy as np
 from spirrid.rv import RV
 from etsproxy.traits.api import HasTraits, cached_property, \
-    Float, Property, Instance, List, Array
+    Float, Property, Instance, List, Array, Bool
 from types import FloatType
 from reinforcement import Reinforcement, ContinuousFibers, ShortFibers
 from stats.pdistrib.weibull_fibers_composite_distr import WeibullFibers
@@ -452,7 +452,7 @@ class CompositeCrackBridge( HasTraits ):
                     # epsf0_lst.append( p *epsf0_sf[i] ) + ( 1 - p ) * epsf_po )
         return np.array( epsf0_lst )
 
-
+    print_all = Bool( False )
     if 0 == 0:
         def profile( self, iter_damage, Lmin, Lmax ):
             # matrix strain derivative with resp. to z as a function of T
@@ -474,7 +474,7 @@ class CompositeCrackBridge( HasTraits ):
             a1 = np.exp( F / 2. ) * amin
             if Lmin < a1[0] and Lmax < a1[0]:
                 # all fibers debonded up to Lmin and Lmax
-                print 'Lmin=Lmax<amin'
+                if self.print_all:print 'Lmin=Lmax<amin'
                 min_a = np.sum( ( Lmin - a_geo ) >= 0 )
                 # min_a = a_d[min_a_i]
                 max_a = np.sum( ( Lmax - a_geo ) >= 0 )
@@ -495,7 +495,7 @@ class CompositeCrackBridge( HasTraits ):
                 # self.E_mtrx = np.hstack( ( Emtrx_geo[1:min_a + 1][::-1], Emtrx_geo[:max_a + 1] ) )
             elif Lmin < a1[0] and Lmax >= a1[0]:
                 # all fibers debonded up to Lmax but not up to Lmin
-                print 'Lmin < a1[0] and Lmax >= a1[0]:'
+                if self.print_all:print 'Lmin < a1[0] and Lmax >= a1[0]:'
                 min_a = np.sum( ( Lmin - a_geo ) > 0 )
                 l_a = np.hstack( ( -Lmin, -a_geo[:min_a][::-1] ) )
                 l_depsm = depsm_geo[:min_a + 1]
@@ -510,7 +510,7 @@ class CompositeCrackBridge( HasTraits ):
                 a2 = np.sqrt( 2 * Lmin ** 2 + np.exp( ( F + C ) ) ) - Lmin
                 if Lmax < a2[0]:
                     # all fibers debonded up to Lmin and Lmax
-                    # print 'Lmin=Lmax<amin'
+                    if self.print_all:print 'Lmin=Lmax<amin'
                     min_a = np.sum( ( Lmin - a_geo ) >= 0 )
                     # min_a = a_d[min_a_i]
                     max_a = np.sum( ( Lmax - a_geo ) >= 0 )
@@ -530,7 +530,7 @@ class CompositeCrackBridge( HasTraits ):
                     epsf0 = ( Lmin * self.sorted_depsf + vxL + l_em[0] )
                     # self.E_mtrx = np.hstack( ( Emtrx_geo[1:min_a + 1][::-1], Emtrx_lmin[:max_a + 1] ) )
                 if Lmax <= a2[-1]:
-                    print 'Lmin <amin und Lmax <a2[-1]'
+                    if self.print_all:print 'Lmin <amin und Lmax <a2[-1]'
                     idx = np.sum( a2 < Lmax ) - 1
                     a = np.hstack( ( l_a[:-1], 0.0, a_geo[1:-1], a2[:idx + 1], Lmax ) )
                     em22 = cumtrapz( depsm_geo[:-1], a_geo[:-1] )
@@ -544,7 +544,7 @@ class CompositeCrackBridge( HasTraits ):
                     epsf0 = np.hstack( ( epsf01, epsf02 ) )
                     # self.E_mtrx = np.hstack( ( Emtrx_geo[1:min_a + 1][::-1], Emtrx_lmin[:-1], Emtrx_deb[:idx + 2] ) )
                 else:
-                    print 'Lmin <amin und Lmax >a2[-1]'
+                    if self.print_all:print 'Lmin <amin und Lmax >a2[-1]'
                     a = np.hstack( ( l_a[:-1], 0.0, a_geo[1:-1], a2, Lmax ) )
                     em22 = cumtrapz( depsm_geo[:-1], a_geo[:-1] )
                     em2 = em22[-1] + np.cumsum( np.diff( np.hstack( ( a_geo[-2], a2 ) ) ) * dems ) 
@@ -553,7 +553,7 @@ class CompositeCrackBridge( HasTraits ):
                     # self.E_mtrx = np.hstack( ( Emtrx_geo[1:min_a + 1][::-1], Emtrx_lmin[:-1], Emtrx_deb, Emtrx_deb[-1] ) )
             elif a1[0] < Lmin and a1[-1] > Lmin:
                 # boundary condition position
-                print 'Lmin>a1[0] und Lmin<a1[-1]'
+                if self.print_all:print 'Lmin>a1[0] und Lmin<a1[-1]'
                 idx1 = np.sum( a1 <= Lmin )
                 # a(T) for one sided pullout
                 # amin for one sided PO
@@ -579,7 +579,7 @@ class CompositeCrackBridge( HasTraits ):
                 # ems_short = dems[:idx1]
                 em_short = np.hstack( ( em_short[::-1] , 0 ) )
                 if a2[-1] > Lmax:
-                    print 'a2[-1]>Lmax'
+                    if self.print_all:print 'a2[-1]>Lmax'
                     idx2 = np.sum( a2 <= Lmax )
                     # matrix strain profiles - longer side
                     a_long = np.hstack( ( a1[:idx1], a2[:idx2] ) )
@@ -596,7 +596,7 @@ class CompositeCrackBridge( HasTraits ):
                     # plt.plot( Emtrx_geo )
                     # plt.show()
                 else:
-                    print 'a2[-1]<Lmax'
+                    if self.print_all:print 'a2[-1]<Lmax'
                     a_long = np.hstack( ( 0.0, a1[:idx1], a2, Lmax ) )
                     a = np.hstack( ( a_short[:-1], -a_geo[::-1][1:-1], 0, a_geo[1:-1], a_long[1:] ) )
                     dems_long = dems
@@ -608,7 +608,7 @@ class CompositeCrackBridge( HasTraits ):
                     # self.E_mtrx = np.hstack( ( Emtrx_deb[::-1][:idx1 + 1], Emtrx_geo[1:-1][::-1], Emtrx_geo[:-1], Emtrx_deb, Emtrx_deb[-1] ) )       
             elif a1[-1] <= Lmin:
                 # double sided pullout
-                print 'double sided'
+                if self.print_all:print 'double sided'
                 # self.E_mtrx = np.hstack( ( Emtrx_deb[-1], Emtrx_deb[::-1], Emtrx_geo[1:-1][::-1], Emtrx_geo[:-1], Emtrx_deb, Emtrx_deb[-1] ) )
                 a = np.hstack( ( -Lmin, -a1[::-1], -a_geo[1:-1][::-1], 0.0, a_geo[1:-1], a1, Lmin ) )
                 em11 = cumtrapz( depsm_geo[:-1], a_geo[:-1] )
@@ -724,7 +724,7 @@ if __name__ == '__main__':
                                  reinforcement_lst = [reinfSF, reinf1],  # , reinf1],
                                  Ll = 4.,
                                  Lr = 200.0,
-                                 w = .55 )
+                                 w = .008003 )
 
     ccb.damage
     sigma = np.sum( ccb._epsf0_arr * ccb.Kf * ( 1. - ccb.damage ) )

@@ -41,7 +41,7 @@ class ContinuousFibers( Reinforcement ):
             self.V_f = 1e-10
         if isinstance( self.tau, RV ):
             tau = self.tau.ppf( 
-                np.linspace( .5 / self.n_int, 1. - .5 / self.n_int, self.n_int ) )
+                np.linspace( max( .5 / self.n_int, 0.05 ), min( 1. - .5 / self.n_int, 0.995 ), self.n_int ) )
             stat_weights *= 1. / self.n_int
             nu_r_tau = np.ones_like( tau )
         else:
@@ -67,7 +67,8 @@ class ContinuousFibers( Reinforcement ):
             return ( 2. * tau / r / self.E_f ).flatten(), stat_weights, nu_r.flatten(), r_arr.flatten()
         else:
             r_arr = ( nu_r * np.mean( r2 ) ) ** 0.5
-            return 2. * tau / r / self.E_f, stat_weights, nu_r, r_arr
+            T = 2. * tau / r / self.E_f
+            return T, stat_weights, nu_r, r_arr
 
     depsf_arr = Property( depends_on = 'r, V_f, E_f, xi, tau, n_int' )
     @cached_property
@@ -108,9 +109,9 @@ class ShortFibers( Reinforcement ):
             phi = self.phi.ppf( discr_ppf )
         tau = tau * ( H( phi < ( pi / 3. ) ) * np.exp( phi * self.snub ) + H( phi > ( pi / 3. ) ) * np.exp( self.snub * pi / 3. ) )
         stat_weights *= 1. / self.n_int
-        Aphi = pi * r ** 2 / np.cos( phi )
+        Aphi = pi * r ** 2. / np.cos( phi )
         llambda = ( r - r / np.cos( phi ) ) / ( r + r / np.cos( phi ) )
-        Uphi = pi * ( r + r / np.cos( phi ) ) * ( 1. + 3.*llambda ** 2. / ( 10. + ( 4 - 3. * llambda ** 2. ) ) )
+        Uphi = pi * ( r + r / np.cos( phi ) ) * ( 1. + 3.*llambda ** 2. / ( 10. + ( 4. - 3. * llambda ** 2. ) ) )
         T = ( Uphi / Aphi * tau / self.E_f )
         nu_r = np.ones_like( tau )
         r_arr = self.r * nu_r

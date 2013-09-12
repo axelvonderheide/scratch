@@ -38,7 +38,8 @@ class CompositeCrackBridgeView( ModelView ):
             E_mtrx = self.model.E_m * np.ones_like( mu_epsf_arr )
         # Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
         #    self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
-        mu_epsf_arr = np.maximum( mu_epsf_arr, self.model._epsm_arr )
+        # mu_epsf_arr = np.maximum( mu_epsf_arr, self.model._epsm_arr )
+        self.model._epsm_arr = np.minimum( mu_epsf_arr, self.model._epsm_arr )
         if self.model.Ll > self.model.Lr:
             return -self.model._x_arr[::-1], self.model._epsm_arr[::-1], sigma_c, mu_epsf_arr[::-1], E_mtrx
         else:
@@ -243,17 +244,17 @@ if __name__ == '__main__':
 
 
     reinf1 = ContinuousFibers( r = 0.0035,
-                          tau = RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
+                          tau = RV( 'weibull_min', loc = 0.006, shape = 1, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
                           V_f = 0.02,
                           E_f = 240e3,
-                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
+                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0017 ),
                           n_int = 100,
                           label = 'carbon' )
 
     reinfSF = ShortFibers( r = 0.3 ,
                           tau = 1.76,
                           lf = 17.,
-                          snub = .03,
+                          snub = .3,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),  # RV( 'uniform', loc = 0., scale = 1e-12 ),
                           V_f = 0.01,
                           E_f = 200e3,
@@ -264,7 +265,7 @@ if __name__ == '__main__':
 
 
     model = CompositeCrackBridge( E_m = 25e3,
-                                 reinforcement_lst = [reinfSF, reinf1],
+                                 reinforcement_lst = [reinf1, reinfSF],
                                  Ll = 4.,
                                  Lr = 200. )
     
@@ -325,7 +326,7 @@ if __name__ == '__main__':
 #    for i, s in enumerate(sigma_c):
 #        ccb_view.apply_load(s)
 #        profile(ccb_view.model.w)
-    w = np.linspace( 0., .1, 40 )
+    w = np.linspace( 0, .5, 100 )
     sigma_c_w( w )
     # energy(w)
     # bundle at 20 mm
@@ -333,6 +334,8 @@ if __name__ == '__main__':
     # plt.plot(w,sigma_bundle)
     plt.plot( ccb_view.sigma_c_max[1], ccb_view.sigma_c_max[0], 'bo' )
     # sigma_f(np.linspace(.0, .16, 50))
+    plt.ylim( 0, 25. )
+    plt.xlim( 0, 0.25 )
     plt.legend( loc = 'best' )
     plt.show()
 

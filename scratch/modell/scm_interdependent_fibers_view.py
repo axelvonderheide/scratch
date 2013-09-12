@@ -37,7 +37,7 @@ class SCMView( ModelView ):
             idxs = []
             for cb in cb_load:
                 idxs.append( np.where( cb.position + 
-                                cb.x[0] == self.model.x_arr )[0] )
+                            cb.x[0] == self.model.x_arr )[0] )
             # add the index of the last point
             idxs.append( self.model.nx - 1 )
             # list of crack widths to be filled in a loop with integrated e_rel
@@ -117,9 +117,9 @@ class SCMView( ModelView ):
 
 if __name__ == '__main__':
     length = 2000.
-    nx = 1000
+    nx = 400
     random_field = RandomField( seed = True,
-                               lacor = 5.,
+                               lacor = 100.,
                                 xgrid = np.linspace( 0., length, 400 ),
                                 nsim = 1,
                                 loc = .0,
@@ -130,10 +130,10 @@ if __name__ == '__main__':
                                )
 
     reinf1 = ContinuousFibers( r = 0.0035,
-                          tau = RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
+                          tau = RV( 'weibull_min', loc = 0.007, shape = 1., scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
                           V_f = 0.02,
                           E_f = 240e3,
-                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
+                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0017 ),
                           label = 'carbon' )
 
     reinfSF = ShortFibers( r = 0.3 ,
@@ -141,7 +141,7 @@ if __name__ == '__main__':
                           lf = 17.,
                           snub = .03,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),  # RV( 'uniform', loc = 0., scale = 1e-12 ),
-                          V_f = 0.01,
+                          V_f = 0.000000001,
                           E_f = 200e3,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
                           label = 'Short Fibers' )
@@ -149,15 +149,16 @@ if __name__ == '__main__':
     CB_model = CompositeCrackBridge( E_m = 25e3,
                                  reinforcement_lst = [reinf1, reinfSF],
                                  )
-
     scm = SCM( length = length,
               nx = nx,
               n_w_interp = 50,
               n_BC_interp = 15,
               n_x_interp = 100,
+              piees = False,
+              piers = False,
               random_field = random_field,
               CB_model = CB_model,
-              load_sigma_c_arr = np.linspace( 0.01, 14., 100 ),
+              load_sigma_c_arr = np.linspace( 0.01, 8., 100 ),
               )
 
     scm_view = SCMView( model = scm )

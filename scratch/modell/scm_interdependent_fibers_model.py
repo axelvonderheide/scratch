@@ -18,7 +18,7 @@ Created on 12 May 2013
 
 from etsproxy.traits.api import \
     HasTraits, Instance, Int, Array, List, \
-    cached_property, Property, Float
+    cached_property, Property, Float, Bool
 from interpolator import Interpolator
 from stats.misc.random_field.random_field_1D import RandomField
 from operator import attrgetter
@@ -252,29 +252,38 @@ class SCM( HasTraits ):
                 right = crack_position_idx + len( np.nonzero( cb.x > 0. )[0] ) + 1
                 epsf_x[left:right] = cb.get_epsf_x_w( float( load ) )
         return epsf_x
-
+    
+    piers = Bool( False )
+    piees = Bool( True )
     def residuum( self, q ):
         residuum = np.min( self.matrix_strength - self.sigma_m( q ) )
-        print residuum, min( self.matrix_strength ), q
+        if self.piers:
+            plt.plot( self.x_arr, self.epsf_x( q ), color = 'red', lw = 2 )
+            plt.plot( self.x_arr, self.sigma_m( q ) / self.CB_model.E_m, color = 'blue', lw = 2 )
+            plt.plot( self.x_arr, self.matrix_strength / self.CB_model.E_m, color = 'black', lw = 2 )
+            plt.ylim( 0 )
+            print 'r,resi,q', residuum, min( self.matrix_strength ), q
+            plt.show()
+            
         return residuum
 
     def evaluate( self ):
         # seek for the minimum strength redundancy to find the position
         # of the next crack
         last_pos = pi
-        sigc_min = 0.0
+        sigc_min = 0.
         sigc_max = self.load_sigma_c_arr[-1]
         while np.any( self.sigma_m( sigc_max ) > self.matrix_strength ):
             s = t.clock()
-            sigc_min1 = brentq( self.residuum, sigc_min, sigc_max )
-            sigc_min = sigc_min1 * 0.9
+            sigc_min = brentq( self.residuum, sigc_min, sigc_max )
+            # sigc_min = sigc_min1 * 0.9
             print 'evaluation of the next matrix crack ', t.clock() - s, 's'
             crack_position = self.x_arr[np.argmin( self.matrix_strength - 
-                                                  self.sigma_m( sigc_min1 ) )]
+                                                  self.sigma_m( sigc_min ) )]
             new_cb = CB( position = float( crack_position ),
-                     crack_load_sigma_c = sigc_min1 - self.load_sigma_c_arr[-1] / 1000.,
+                     crack_load_sigma_c = sigc_min - self.load_sigma_c_arr[-1] / 1000.,
                      interpolator = self.interpolator )
-            self.sigma_c_crack.append( sigc_min1 - 1e-10 )
+            self.sigma_c_crack.append( sigc_min - 1e-10 )
             if len( self.cracks_list ) is not 0:
                 self.cracks_list.append( copy.copy( self.cracks_list[-1] )
                                         + [new_cb] )
@@ -283,11 +292,14 @@ class SCM( HasTraits ):
             self.sort_cbs()
             cb_list = self.cracks_list[-1]
             sigc_max_lst = [cbi.max_sigma_c for cbi in cb_list]
-            sigc_max = min( sigc_max_lst + [self.load_sigma_c_arr[-1]] ) - 1e-10
-            plt.plot( self.x_arr, self.epsf_x( sigc_min ), color = 'red', lw = 2 )
-            plt.plot( self.x_arr, self.sigma_m( sigc_min ) / self.CB_model.E_m, color = 'blue', lw = 2 )
-            plt.plot( self.x_arr, self.matrix_strength / self.CB_model.E_m, color = 'black', lw = 2 )
-            plt.show()
+            sigc_max = min( sigc_max_lst + [self.load_sigma_c_arr[-1]] )  # - 1e-10
+            if self.piees:
+                print crack_position
+                plt.plot( self.x_arr, self.epsf_x( sigc_min ) )  # , color = 'red', lw = 2 )
+                plt.plot( self.x_arr, self.sigma_m( sigc_min ) / self.CB_model.E_m )  # , color = 'blue', lw = 2 )
+                plt.plot( self.x_arr, self.matrix_strength / self.CB_model.E_m )  # , color = 'black', lw = 2 )
+                plt.ylim( 0 )
+                plt.show()
             if float( crack_position ) == last_pos:
                 print last_pos
                 raise ValueError( '''got stuck in loop,
