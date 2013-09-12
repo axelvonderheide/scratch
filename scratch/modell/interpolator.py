@@ -81,9 +81,18 @@ class Interpolator( HasTraits ):
     @cached_property
     def _get_result_values( self ):
         try:
-            pkl_file = open( 'interp_arr.pkl', 'rb' )
-            return pickle.load( pkl_file )
+            points_max_sigma_c_arr = open( 'interp_arr_points.pkl', 'rb' )
+            pmsc_arr = pickle.load( points_max_sigma_c_arr )
+            
+            interp_arr_mu_epsf_arr = open( 'interp_arr_mu_epsf_arr.pkl', 'rb' )
+            mu_epsf_arr = pickle.load( interp_arr_mu_epsf_arr )
+            interp_arr_epsm_arr = open( 'interp_arr_epsm_arr.pkl', 'rb' )
+            epsm_arr = pickle.load( interp_arr_epsm_arr )
+            print pmsc_arr[0][0].shape, mu_epsf_arr[0].shape, epsm_arr[0].shape, pmsc_arr[1][0].shape
+            return [np.array( pmsc_arr[0], mu_epsf_arr, epsm_arr, pmsc_arr[1] ) ]
+            
         except:
+            print 'exception'
             L_arr = self.BC_range
             Ll_arr = np.array( [] )
             Lr_arr = np.array( [] )
@@ -113,11 +122,20 @@ class Interpolator( HasTraits ):
                     print 'progress: %2.1f %%' % \
                     ( current_loop / float( loops_tot ) * 100. )
             points = np.array( [Ll_arr, Lr_arr, x_arr, sigma_c_arr] )
-            interp_arr = open( 'interp_arr.pkl', 'wb' )
-            pickle.dump( [points, mu_epsf_arr, epsm_arr, max_sigma_c_arr], interp_arr, -1 )
-            interp_arr.close()
-            pkl_file = open( 'interp_arr.pkl', 'rb' )
-            return pickle.load( pkl_file )
+            interp_arr_points = open( 'interp_arr_points.pkl', 'wb' )
+            pickle.dump( [points, max_sigma_c_arr], interp_arr_points, -1 )
+            interp_arr_points.close()
+            
+            interp_arr_mu_epsf_arr = open( 'interp_arr_mu_epsf_arr.pkl', 'wb' )
+            pickle.dump( [mu_epsf_arr], interp_arr_mu_epsf_arr, -1 )
+            interp_arr_mu_epsf_arr.close()
+            
+            interp_arr_epsm_arr = open( 'interp_arr_epsm_arr.pkl', 'wb' )
+            pickle.dump( [epsm_arr], interp_arr_epsm_arr, -1 )
+            interp_arr_epsm_arr.close()
+
+            print [points, mu_epsf_arr, epsm_arr, max_sigma_c_arr]
+            return [points, mu_epsf_arr, epsm_arr, max_sigma_c_arr]
 
     def interpolate_max_sigma_c( self, Ll, Lr ):
         L_l, L_r = self.get_L( Ll, Lr )

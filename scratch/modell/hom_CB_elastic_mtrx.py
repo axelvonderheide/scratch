@@ -34,7 +34,7 @@ class CompositeCrackBridge( HasTraits ):
     E_m = Float
     Ll = Float
     Lr = Float
-    discr_amin = Float( 200. )
+    discr_amin = Float( 100. )
     c_mask = Property( depends_on = 'reinforcement_lst+' )
     @cached_property
     def _get_c_mask( self ):

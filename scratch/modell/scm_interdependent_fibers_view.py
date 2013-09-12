@@ -151,9 +151,9 @@ if __name__ == '__main__':
                                  )
     scm = SCM( length = length,
               nx = nx,
-              n_w_interp = 50,
-              n_BC_interp = 15,
-              n_x_interp = 200,
+              n_w_interp = 5,
+              n_BC_interp = 2,
+              n_x_interp = 20,
               piees = False,
               piers = False,
               random_field = random_field,

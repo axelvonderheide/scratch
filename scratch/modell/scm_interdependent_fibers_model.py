@@ -254,10 +254,10 @@ class SCM( HasTraits ):
         return epsf_x
     
     piers = Bool( False )
-    piees = Bool( True )
+    piees = Bool( False )
     def residuum( self, q ):
         residuum = np.min( self.matrix_strength - self.sigma_m( q ) )
-        if self.counter > 23:
+        if self.piers:
             plt.plot( self.x_arr, self.epsf_x( q ), color = 'red', lw = 2 )
             plt.plot( self.x_arr, self.sigma_m( q ) / self.CB_model.E_m, color = 'blue', lw = 2 )
             plt.plot( self.x_arr, self.matrix_strength / self.CB_model.E_m, color = 'black', lw = 2 )

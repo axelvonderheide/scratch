@@ -10,6 +10,7 @@ from scipy.integrate import cumtrapz
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 import time
 from scipy.optimize import minimize
+from scipy.interpolate import interp1d
 from hom_CB_elastic_mtrx import CompositeCrackBridge
 from matplotlib import pyplot as plt
 
@@ -31,7 +32,14 @@ class CompositeCrackBridgeView( ModelView ):
         Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
             self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
         E_mtrx = ( 1. - self.model.V_f_tot ) * self.model.E_m + Kf_broken
-        mu_epsf_arr = ( sigma_c - E_mtrx * self.model._epsm_arr ) / ( self.model.E_c - E_mtrx )
+
+        filter_bool = False
+        if filter_bool:
+            x_arr, epsm_arr = self.filter( self.model._x_arr, self.model._epsm_arr )
+        else:
+            x_arr = self.model._x_arr
+            epsm_arr = self.model._epsm_arr
+        mu_epsf_arr = ( sigma_c - E_mtrx * epsm_arr ) / ( self.model.E_c - E_mtrx )
         if condition:
             sigma_c = 1e-6
             mu_epsf_arr = 1e-6 * np.ones_like( mu_epsf_arr )
@@ -39,11 +47,19 @@ class CompositeCrackBridgeView( ModelView ):
         # Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
         #    self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
         # mu_epsf_arr = np.maximum( mu_epsf_arr, self.model._epsm_arr )
-        self.model._epsm_arr = np.minimum( mu_epsf_arr, self.model._epsm_arr )
+        self.model._epsm_arr = np.minimum( mu_epsf_arr, epsm_arr )
         if self.model.Ll > self.model.Lr:
-            return -self.model._x_arr[::-1], self.model._epsm_arr[::-1], sigma_c, mu_epsf_arr[::-1], E_mtrx
+            return -x_arr[::-1], epsm_arr[::-1], sigma_c, mu_epsf_arr[::-1], E_mtrx
         else:
-            return self.model._x_arr, self.model._epsm_arr, sigma_c, mu_epsf_arr, E_mtrx
+            return x_arr, epsm_arr, sigma_c, mu_epsf_arr, E_mtrx
+
+    def filter( self, x_arr, epsm_arr ):
+        mask_r = x_arr[-1] == x_arr
+        mask_l = x_arr[0] == x_arr
+        r_stop = np.argmax( mask_r ) + 1
+        l_stop = len( mask_r ) - 1 - np.argmax( mask_l[::-1] )
+        return x_arr[l_stop:r_stop], epsm_arr[l_stop:r_stop]
+
 
     x_arr = Property( depends_on = 'model.E_m, model.w, model.Ll, model.Lr, model.reinforcement_lst+' )
     @cached_property
@@ -326,7 +342,7 @@ if __name__ == '__main__':
 #    for i, s in enumerate(sigma_c):
 #        ccb_view.apply_load(s)
 #        profile(ccb_view.model.w)
-    w = np.linspace( 0, .0015, 100 )
+    w = np.linspace( 0, .05, 100 )
     sigma_c_w( w )
     # energy(w)
     # bundle at 20 mm
