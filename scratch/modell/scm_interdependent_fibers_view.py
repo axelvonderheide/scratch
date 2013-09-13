@@ -5,7 +5,7 @@ Created on Jul 26, 2012
 '''
 
 from etsproxy.traits.api import \
-    Instance, Array, List, cached_property, Property
+    Instance, Array, List, cached_property, Property, Int
 from etsproxy.traits.ui.api import ModelView
 from spirrid.rv import RV
 from stats.misc.random_field.random_field_1D import RandomField
@@ -24,7 +24,6 @@ from matplotlib import pyplot as plt
 class SCMView( ModelView ):
 
     model = Instance( SCM )
-
     def crack_widths( self, sigma_c ):
         # find the index of the nearest value in the load range
         idx = np.abs( self.model.load_sigma_c_arr - sigma_c ).argmin()
@@ -116,6 +115,27 @@ class SCMView( ModelView ):
             return eps, sigma
         else:
             return eps, self.model.load_sigma_c_arr
+        
+    def save_to_file( self ):
+        # 1 eps sigma
+        eps, sigma = self.eps_sigma
+        combined_es = open( 'combined_es.pkl', 'wb' )
+        pickle.dump( [eps, sigma], combined_es, -1 )
+        combined_es.close()
+        # 2 w sigma
+        sigma = self.model.load_sigma_c_arr
+        combined_sw = open( 'combined_sw.pkl', 'wb' )
+        pickle.dump( [sigma, self.w_mean, self.w_max, self.w_stdev], combined_sw, -1 )
+        combined_sw.close()
+        # 3 Histogram
+        hist_list = []
+        for load in sigma:
+            hist_list.append( self.crack_widths( load ) )
+        combined_hist = open( 'combined_hist.pkl', 'wb' )
+        pickle.dump( np.array( hist_list ), combined_hist, -1 )
+        combined_hist.close()
+        os.chdir( os.pardir )
+        return 0
 
 if __name__ == '__main__':
     length = 1000.
@@ -147,42 +167,53 @@ if __name__ == '__main__':
                           E_f = 200e3,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
                           label = 'Short Fibers' )
-
-    CB_model = CompositeCrackBridge( E_m = 25e3,
-                                 reinforcement_lst = [reinf1, reinfSF],
+    
+    def open_CB( r1, r2 ):
+        return CompositeCrackBridge( E_m = 25e3,
+                                 reinforcement_lst = [r1, r2],
                                  )
-    scm = SCM( length = length,
-              nx = nx,
-              n_w_interp = 5,
-              n_BC_interp = 8,
-              n_x_interp = 1000,
-              piees = False,
-              piers = False,
-              random_field = random_field,
-              CB_model = CB_model,
-              load_sigma_c_arr = np.linspace( 0.01, 8., 100 ),
-              )
-
-    scm_view = SCMView( model = scm )
-    scm_view.model.evaluate()
-    def save_to_file():
-        os.chdir( 'Multiple_Cracking' )
-        # 1
-        eps, sigma = scm_view.eps_sigma
-        combined_es = open( 'combined_es.pkl', 'wb' )
-        pickle.dump( [eps, sigma], combined_es, -1 )
-        combined_es.close()
-        # 2
-        sigma = scm_view.model.load_sigma_c_arr
-        w_mean = scm_view.w_mean
-        combined_sw = open( 'combined_sw.pkl', 'wb' )
-        pickle.dump( [sigma, w_mean], combined_sw, -1 )
-        combined_sw.close()
+    
+    def open_ini( CB_model ):
+        scm = SCM( length = length,
+                  nx = nx,
+                  n_w_interp = 40,
+                  n_BC_interp = 8,
+                  n_x_interp = 500,
+                  piees = False,
+                  piers = False,
+                  random_field = random_field,
+                  CB_model = CB_model,
+                  load_sigma_c_arr = np.linspace( 0.01, 8., 100 ),
+                  d_int = 2
+                  )
+        scm_view = SCMView( model = scm )
+        return scm_view
+   
+    
+    V_f_list = [0.005, 0.01, 0.015, 0.02, 0.025, 0.03]
+    for i, V_fi in enumerate( V_f_list ):
+        reinfSF.V_f = V_fi
+        CB = open_CB( reinf1, reinfSF )
+        scm_view = open_ini( CB )
+        os.chdir( 'Multiple_Cracking/R1' )
+        os.mkdir( np.str( V_fi ) )
+        os.chdir( np.str( V_fi ) )
+        os.mkdir( 'InterpolatorData' )
+        try:
+            scm_view.model.evaluate()
+            scm_view.save_to_file()
+        except:pass
         os.chdir( os.pardir )
-        return 0
+        os.chdir( os.pardir )
+        del scm_view
+        del CB
+        print 'global status:', i + 1, 'of', len( V_f_list ), 'done'
+
+        
+    
         
     def plot():
-        save_to_file()
+        scm_view.save_to_file()
         eps, sigma = scm_view.eps_sigma
         plt.figure()
         plt.plot( eps, sigma, color = 'black', lw = 2, label = 'model' )
@@ -190,9 +221,9 @@ if __name__ == '__main__':
         plt.xlabel( 'composite strain [-]' )
         plt.ylabel( 'composite stress [MPa]' )
         plt.figure()
-        plt.hist( scm_view.crack_widths( 2. ), bins = 20, label = 'load = 20 MPa' )
-        plt.hist( scm_view.crack_widths( 3. ), bins = 20, label = 'load = 15 MPa' )
-        plt.hist( scm_view.crack_widths( 4. ), bins = 20, label = 'load = 10 MPa' )
+        plt.hist( scm_view.crack_widths( 4. ), bins = 20, label = 'load = 2 MPa' )
+        plt.hist( scm_view.crack_widths( 5. ), bins = 20, label = 'load = 15 MPa' )
+        plt.hist( scm_view.crack_widths( 7.5 ), bins = 20, label = 'load = 10 MPa' )
         plt.legend( loc = 'best' )
         plt.figure()
         plt.plot( scm_view.model.load_sigma_c_arr, scm_view.w_mean,
@@ -207,4 +238,4 @@ if __name__ == '__main__':
                  ls = 'dashed', color = 'red', label = 'max crack width' )
         plt.legend( loc = 'best' )
         plt.show()
-    plot()
+    # plot()

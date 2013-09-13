@@ -40,18 +40,17 @@ class CB( HasTraits ):
     '''crack bridge class - includes informations about position,
     stress range and evaluates the stress and strain profiles in the
     composite components'''
-    interpolator = Instance( Interpolator )
+    
     position = Float
     Ll = Float
     Lr = Float
     x = Array
     crack_load_sigma_c = Float
-
+    interpolator = Instance( Interpolator )
     max_sigma_c = Property( Float, depends_on = 'Ll, Lr' )
     @cached_property
     def _get_max_sigma_c( self ):
         return self.interpolator.interpolate_max_sigma_c( self.Ll, self.Lr )
-    
     strain_profiles = Property( depends_on = 'Ll, Lr' )
     @cached_property
     def _get_strain_profiles( self ):
@@ -146,13 +145,19 @@ class SCM( HasTraits ):
     n_w_interp = Int( 30 )
     n_BC_interp = Int( 10 )
     n_x_interp = Int( 80 )
-    interpolator = Instance( Interpolator )
+    interpolator = Instance( Interpolator, depends_on = 'CB_model' )
+    @cached_property
+    def _get_interpolator( self ):
+        return Interpolator( CB_model = self.CB_model,
+                            load_sigma_c_arr = self.load_sigma_c_arr,
+                            length = self.length, n_w = self.n_w_interp, n_BC = self.n_BC_interp, n_x = self.n_x_interp
+                            )
     def _interpolator_default( self ):
         return Interpolator( CB_model = self.CB_model,
                             load_sigma_c_arr = self.load_sigma_c_arr,
                             length = self.length, n_w = self.n_w_interp, n_BC = self.n_BC_interp, n_x = self.n_x_interp
                             )
-
+        
     sigma_c_crack = List
     cracks_list = List
 
@@ -327,9 +332,17 @@ if __name__ == '__main__':
                           E_f = 240e3,
                           xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
                           label = 'carbon' )
-
+    reinfSF = ShortFibers( r = 0.3 ,
+                          tau = 1.76,
+                          lf = 17.,
+                          snub = .03,
+                          phi = RV( 'sin2x', loc = 0., scale = 1. ),  # RV( 'uniform', loc = 0., scale = 1e-12 ),
+                          V_f = 0.01,
+                          E_f = 200e3,
+                          xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
+                          label = 'Short Fibers' )
     CB_model = CompositeCrackBridge( E_m = 25e3,
-                                 reinforcement_lst = [reinf],
+                                 reinforcement_lst = [reinf, reinfSF],
                                  )
 
     scm = SCM( length = length,

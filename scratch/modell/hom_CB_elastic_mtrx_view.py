@@ -33,7 +33,7 @@ class CompositeCrackBridgeView( ModelView ):
             self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
         E_mtrx = ( 1. - self.model.V_f_tot ) * self.model.E_m + Kf_broken
 
-        filter_bool = False
+        filter_bool = True
         if filter_bool:
             x_arr, epsm_arr = self.filter( self.model._x_arr, self.model._epsm_arr )
         else:
@@ -53,14 +53,30 @@ class CompositeCrackBridgeView( ModelView ):
         else:
             return x_arr, epsm_arr, sigma_c, mu_epsf_arr, E_mtrx
 
-    def filter( self, x_arr, epsm_arr ):
+    d_int = Int( 2 )
+    def filter_mask( self, length ):
+        filter_level = self.d_int
+        base = np.hstack( ( np.repeat( 0, filter_level - 1 ), 1 ) )
+        mpc = length / filter_level
+        rest = length % filter_level
+        return np.hstack( ( np.tile( base, mpc ), np.ones( rest ) ) )
         
-        mask_r = x_arr[-1] == x_arr
-        mask_l = x_arr[0] == x_arr
-        r_stop = np.argmax( mask_r ) + 1
-        l_stop = len( mask_r ) - 1 - np.argmax( mask_l[::-1] )
-        return x_arr[l_stop:r_stop], epsm_arr[l_stop:r_stop]
-
+    def filter( self, x_arr, epsm_arr ):
+        # cut at both ends
+        # mask_r = x_arr[-1] == x_arr
+        # mask_l = x_arr[0] == x_arr
+        # r_stop = np.argmax( mask_r ) + 1
+        # l_stop = len( mask_r ) - 1 - np.argmax( mask_l[::-1] )
+        # x_cut = x_arr[l_stop:r_stop]
+        # epsm_cut = epsm_arr[l_stop:r_stop]
+        x_cut = x_arr
+        epsm_cut = epsm_arr
+        ix_0 = np.argmin( np.abs( x_cut ) )
+        mask_l = self.filter_mask( len( x_cut[:ix_0] ) - 1 )
+        mask_r = self.filter_mask( len( x_cut[ix_0 + 1:] ) - 1 )
+        full_mask = np.hstack( ( 1, mask_l, 1, mask_r, 1 ) )
+        full_mask = full_mask.astype( bool )
+        return x_cut[full_mask], epsm_cut[full_mask]
 
     x_arr = Property( depends_on = 'model.E_m, model.w, model.Ll, model.Lr, model.reinforcement_lst+' )
     @cached_property
@@ -237,7 +253,7 @@ class CompositeCrackBridgeView( ModelView ):
         u_arr = np.array( u_lst )
         F_arr = np.array( F_lst )
         U_line = MFnLineArray( xdata = w_arr, ydata = np.hstack( ( 0, cumtrapz( F_arr, u_arr ) ) ) )
-        return U_lineself.piers
+        return U_line  # self.piers
 
     U = Property( depends_on = 'model.E_m, model.Ll, model.Lr, model.reinforcement_lst+, model.w' )
     @cached_property
@@ -265,7 +281,7 @@ if __name__ == '__main__':
                           V_f = 0.02,
                           E_f = 240e3,
                           xi = WeibullFibers( shape = 5.0, sV0 = 0.0017 ),
-                          n_int = 100,
+                          n_int = 1000,
                           label = 'carbon' )
 
     reinfSF = ShortFibers( r = 0.3 ,
@@ -276,7 +292,7 @@ if __name__ == '__main__':
                           V_f = 0.01,
                           E_f = 200e3,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
-                          n_int = 100,
+                          n_int = 1000,
                           label = 'Short Fibers' )
     
 
@@ -343,16 +359,18 @@ if __name__ == '__main__':
 #    for i, s in enumerate(sigma_c):
 #        ccb_view.apply_load(s)
 #        profile(ccb_view.model.w)
-    w = np.linspace( 0, .05, 100 )
-    sigma_c_w( w )
+    # w = np.linspace( 0, .05, 100 )
+    w = 0.05
+    # ccb_view.sigma_c_max( w )
+    profile( w )
     # energy(w)
     # bundle at 20 mm
     # sigma_bundle = 70e3*w/20.*np.exp(-(w/20./0.03)**5.)
     # plt.plot(w,sigma_bundle)
-    plt.plot( ccb_view.sigma_c_max[1], ccb_view.sigma_c_max[0], 'bo' )
+    # plt.plot( ccb_view.sigma_c_max[1], ccb_view.sigma_c_max[0], 'bo' )
     # sigma_f(np.linspace(.0, .16, 50))
-    plt.ylim( 0, 25. )
-    plt.xlim( 0, 0.25 )
+    # plt.ylim( 0, 25. )
+    # plt.xlim( 0, 0.25 )
     plt.legend( loc = 'best' )
     plt.show()
 
