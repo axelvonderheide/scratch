@@ -54,6 +54,7 @@ class CompositeCrackBridgeView( ModelView ):
             return x_arr, epsm_arr, sigma_c, mu_epsf_arr, E_mtrx
 
     def filter( self, x_arr, epsm_arr ):
+        
         mask_r = x_arr[-1] == x_arr
         mask_l = x_arr[0] == x_arr
         r_stop = np.argmax( mask_r ) + 1

@@ -7,7 +7,7 @@ the Interpolator2 class evaluates crack bridges along x and for a range of load 
 @author: Q
 '''
 from etsproxy.traits.api import HasTraits, Property, cached_property, \
-    Instance, Array, Float, Int
+    Instance, Array, Float, Int, String
 import numpy as np
 from hom_CB_elastic_mtrx import CompositeCrackBridge
 from hom_CB_elastic_mtrx_view import CompositeCrackBridgeView
@@ -16,16 +16,15 @@ import time
 from scipy.interpolate import interp2d
 from mathkit.mfn.mfn_line.mfn_line import MFnLineArray
 import pickle
+import os
 
 class Interpolator( HasTraits ):
-
     CB_model = Instance( CompositeCrackBridge )
     n_w = Int
     n_BC = Int
     n_x = Int
     load_sigma_c_arr = Array
     length = Float
-
     CB_model_view = Property( Instance( CompositeCrackBridgeView ), depends_on = 'CB_model' )
     @cached_property
     def _get_CB_model_view( self ):
@@ -80,6 +79,7 @@ class Interpolator( HasTraits ):
     result_values = Property( Array, depends_on = 'CB_model, load_sigma_c_arr, n_w, n_x, n_BC' )
     @cached_property
     def _get_result_values( self ):
+            os.chdir( 'InterpolatorData' )
             try:
                 points_max_sigma_c_arr = open( 'interp_arr_points.pkl', 'rb' )
                 pmsc_arr = pickle.load( points_max_sigma_c_arr )
@@ -90,8 +90,8 @@ class Interpolator( HasTraits ):
                 interp_arr_epsm_arr = open( 'interp_arr_epsm_arr.pkl', 'rb' )
                 epsm_arr = pickle.load( interp_arr_epsm_arr )
                 interp_arr_epsm_arr.close()
+                os.chdir( os.pardir )
                 return [ pmsc_arr[0], mu_epsf_arr[0], epsm_arr[0], pmsc_arr[1] ]
-
             except:
                 L_arr = self.BC_range
                 Ll_arr = np.array( [] )
@@ -105,7 +105,7 @@ class Interpolator( HasTraits ):
                 for i, ll in enumerate( L_arr ):
                     for j, lr in enumerate( L_arr ):
                         if j >= i:
-                            # print ll, lr
+                            print ll, lr
                             # find maximum
                             sigma_c_max, wmax = self.max_sigma_w( ll, lr )
                             max_sigma_c_arr[i, j] = max_sigma_c_arr[j, i] = sigma_c_max
@@ -133,6 +133,7 @@ class Interpolator( HasTraits ):
                 interp_arr_epsm_arr = open( 'interp_arr_epsm_arr.pkl', 'wb' )
                 pickle.dump( [epsm_arr], interp_arr_epsm_arr, -1 )
                 interp_arr_epsm_arr.close()
+                os.chdir( os.pardir )
                 return [points, mu_epsf_arr, epsm_arr, max_sigma_c_arr]
         
     def interpolate_max_sigma_c( self, Ll, Lr ):

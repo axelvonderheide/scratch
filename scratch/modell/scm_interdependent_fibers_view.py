@@ -6,7 +6,6 @@ Created on Jul 26, 2012
 
 from etsproxy.traits.api import \
     Instance, Array, List, cached_property, Property
-from matplotlib import pyplot as plt
 from etsproxy.traits.ui.api import ModelView
 from spirrid.rv import RV
 from stats.misc.random_field.random_field_1D import RandomField
@@ -17,6 +16,9 @@ from reinforcement import Reinforcement, ContinuousFibers, ShortFibers
 from stats.pdistrib.weibull_fibers_composite_distr import WeibullFibers
 from hom_CB_elastic_mtrx import CompositeCrackBridge
 from hom_CB_elastic_mtrx_view import CompositeCrackBridgeView
+import pickle
+import os
+from matplotlib import pyplot as plt
 
 
 class SCMView( ModelView ):
@@ -141,7 +143,7 @@ if __name__ == '__main__':
                           lf = 17.,
                           snub = .03,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),  # RV( 'uniform', loc = 0., scale = 1e-12 ),
-                          V_f = 0.011,
+                          V_f = 0.01,
                           E_f = 200e3,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
                           label = 'Short Fibers' )
@@ -152,8 +154,8 @@ if __name__ == '__main__':
     scm = SCM( length = length,
               nx = nx,
               n_w_interp = 5,
-              n_BC_interp = 2,
-              n_x_interp = 20,
+              n_BC_interp = 8,
+              n_x_interp = 1000,
               piees = False,
               piers = False,
               random_field = random_field,
@@ -163,8 +165,24 @@ if __name__ == '__main__':
 
     scm_view = SCMView( model = scm )
     scm_view.model.evaluate()
-
+    def save_to_file():
+        os.chdir( 'Multiple_Cracking' )
+        # 1
+        eps, sigma = scm_view.eps_sigma
+        combined_es = open( 'combined_es.pkl', 'wb' )
+        pickle.dump( [eps, sigma], combined_es, -1 )
+        combined_es.close()
+        # 2
+        sigma = scm_view.model.load_sigma_c_arr
+        w_mean = scm_view.w_mean
+        combined_sw = open( 'combined_sw.pkl', 'wb' )
+        pickle.dump( [sigma, w_mean], combined_sw, -1 )
+        combined_sw.close()
+        os.chdir( os.pardir )
+        return 0
+        
     def plot():
+        save_to_file()
         eps, sigma = scm_view.eps_sigma
         plt.figure()
         plt.plot( eps, sigma, color = 'black', lw = 2, label = 'model' )
