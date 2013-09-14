@@ -79,7 +79,10 @@ class Interpolator( HasTraits ):
     result_values = Property( Array, depends_on = 'CB_model, load_sigma_c_arr, n_w, n_x, n_BC' )
     @cached_property
     def _get_result_values( self ):
-            os.chdir( 'InterpolatorData' )
+            try:os.chdir( 'InterpolatorData' )
+            except:
+                os.mkdir( 'InterpolatorData' )
+                os.chdir( 'InterpolatorData' )
             try:
                 points_max_sigma_c_arr = open( 'interp_arr_points.pkl', 'rb' )
                 pmsc_arr = pickle.load( points_max_sigma_c_arr )

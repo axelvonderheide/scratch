@@ -190,19 +190,25 @@ if __name__ == '__main__':
         return scm_view
    
     
-    V_f_list = [0.005, 0.01, 0.015, 0.02, 0.025, 0.03]
+    V_f_list = [0.01, 0.015, 0.02, 0.025, 0.03]
     for i, V_fi in enumerate( V_f_list ):
         reinfSF.V_f = V_fi
         CB = open_CB( reinf1, reinfSF )
         scm_view = open_ini( CB )
         os.chdir( 'Multiple_Cracking/R1' )
-        os.mkdir( np.str( V_fi ) )
+        if os.path.isdir( np.str( V_fi ) ):
+            pass
+        else: os.mkdir( np.str( V_fi ) )
         os.chdir( np.str( V_fi ) )
-        os.mkdir( 'InterpolatorData' )
-        try:
-            scm_view.model.evaluate()
-            scm_view.save_to_file()
-        except:pass
+        if os.path.isdir( 'InterpolatorData' ):
+            pass
+        else:os.mkdir( 'InterpolatorData' )
+        # try:
+        scm_view.model.evaluate()
+        scm_view.save_to_file()
+        # except:
+        #    print 'error in eval'
+        #    os.chdir( os.pardir )
         os.chdir( os.pardir )
         os.chdir( os.pardir )
         del scm_view

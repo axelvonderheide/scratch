@@ -279,11 +279,13 @@ class SCM( HasTraits ):
         sigc_min = 0.
         sigc_max = self.load_sigma_c_arr[-1]
         while np.any( self.sigma_m( sigc_max ) > self.matrix_strength ):
-            s = t.clock()
-            sigc_min = brentq( self.residuum, sigc_min, sigc_max )
             self.counter += 1
+            s = t.clock()
+            try: sigc_min = brentq( self.residuum, sigc_min, sigc_max )
+            except:
+                sigc_min = sigc_min + 1e-12
             # sigc_min = sigc_min1 * 0.9
-            print 'evaluation of the next matrix crack ', t.clock() - s, 's'
+            print 'evaluation of the next matrix crack ', t.clock() - s, 's', ' crack number:', self.counter
             crack_position = self.x_arr[np.argmin( self.matrix_strength - 
                                                   self.sigma_m( sigc_min ) )]
             new_cb = CB( position = float( crack_position ),
