@@ -47,7 +47,9 @@ class CompositeCrackBridgeView( ModelView ):
         # Kf_broken = np.sum( self.model.sorted_V_f * self.model.sorted_nu_r * \
         #    self.model.sorted_stats_weights * self.model.sorted_E_f * self.model.damage )
         # mu_epsf_arr = np.maximum( mu_epsf_arr, self.model._epsm_arr )
-        self.model._epsm_arr = np.minimum( mu_epsf_arr, epsm_arr )
+        
+        epsm_arr = np.minimum( mu_epsf_arr, epsm_arr )
+        epsm_arr = np.minimum( epsm_arr, np.ones_like( epsm_arr ) * max( epsm_arr[-1], epsm_arr[0] ) ) 
         if self.model.Ll > self.model.Lr:
             return -x_arr[::-1], epsm_arr[::-1], sigma_c, mu_epsf_arr[::-1], E_mtrx
         else:
@@ -308,7 +310,7 @@ if __name__ == '__main__':
     def profile( w ):
         ccb_view.model.w = w
         plt.plot( ccb_view.x_arr, ccb_view.epsm_arr, lw = 2, label = 'Ll=' + str( ccb_view.model.Ll ) )
-        plt.plot( ccb_view.x_arr, ccb_view.mu_epsf_arr, color = 'red', lw = 2 )
+        # plt.plot( ccb_view.x_arr, ccb_view.mu_epsf_arr, color = 'red', lw = 2 )
         plt.xlabel( 'position [mm]' )
         plt.ylabel( 'strain' )
 
