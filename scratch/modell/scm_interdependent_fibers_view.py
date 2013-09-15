@@ -11,6 +11,7 @@ from spirrid.rv import RV
 from stats.misc.random_field.random_field_1D import RandomField
 import numpy as np
 import copy
+from math import pi
 from scm_interdependent_fibers_model import SCM
 from reinforcement import Reinforcement, ContinuousFibers, ShortFibers
 from stats.pdistrib.weibull_fibers_composite_distr import WeibullFibers
@@ -134,7 +135,6 @@ class SCMView( ModelView ):
         combined_hist = open( 'combined_hist.pkl', 'wb' )
         pickle.dump( np.array( hist_list ), combined_hist, -1 )
         combined_hist.close()
-        os.chdir( os.pardir )
         return 0
 
 if __name__ == '__main__':
@@ -151,14 +151,30 @@ if __name__ == '__main__':
                                 distribution = 'Weibull'
                                )
 
-    reinf1 = ContinuousFibers( r = 0.0035,
+    tex_carbonfibers_soft = ContinuousFibers( r = 0.0035,
                           tau = RV( 'weibull_min', loc = 0.007, shape = 1., scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
                           V_f = 0.02,
                           E_f = 240e3,
                           xi = WeibullFibers( shape = 5.0, sV0 = 0.0017 ),
-                          label = 'carbon' )
+                          label = 'TEXCarbon_soft' )
+    
+    tex_carbonfibers_real = ContinuousFibers( r = 0.0035,
+                          tau = RV( 'weibull_min', loc = 0.006, shape = .26, scale = .03 ),
+                          V_f = 0.011,
+                          E_f = 240e3,
+                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
+                          label = 'TEXCarbon_real' )
+    
+    tex_glas = ContinuousFibers( r = 0.0095,
+                          tau = RV( 'weibull_min', loc = .011, shape = 0.2, scale = 0.019 ),
+                          V_f = 0.011,
+                          E_f = 72e3,
+                          xi = WeibullFibers( shape = 4.65, sV0 = 1.92e-3 ),
+                          label = 'TEXGlas' )
+    
 
-    reinfSF = ShortFibers( r = 0.3 ,
+     
+    sf_steel = ShortFibers( r = 0.3 ,
                           tau = 1.76,
                           lf = 17.,
                           snub = .03,
@@ -166,7 +182,27 @@ if __name__ == '__main__':
                           V_f = 0.01,
                           E_f = 200e3,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
-                          label = 'Short Fibers' )
+                          label = 'SFSteel' )
+    
+    sf_polyethylen = ShortFibers( r = 3.8e-3 ,
+                          tau = .102,
+                          lf = 12.7 ,
+                          snub = .7,
+                          phi = RV( 'sin2x', loc = 0., scale = 1. ),  # RV( 'uniform', loc = 0., scale = 1e-12 ),
+                          V_f = 0.01,
+                          E_f = 120e3,
+                          xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
+                          label = 'SFPolyethylen' )
+    
+    sf_glas = ShortFibers( r = 0.0095,
+                          tau = 1.,
+                          lf = 10. ,
+                          snub = 0.7,
+                          phi = RV( 'sin2x', loc = 0., scale = 1. ),
+                          V_f = 0.011,
+                          E_f = 72e3,
+                          xi = np.infty,
+                          label = 'SFGlas' )
     
     def open_CB( r1, r2 ):
         return CompositeCrackBridge( E_m = 25e3,
@@ -178,7 +214,7 @@ if __name__ == '__main__':
                   nx = nx,
                   n_w_interp = 40,
                   n_BC_interp = 8,
-                  n_x_interp = 500,
+                  n_x_interp = 400,
                   piees = False,
                   piers = False,
                   random_field = random_field,
@@ -188,33 +224,52 @@ if __name__ == '__main__':
                   )
         scm_view = SCMView( model = scm )
         return scm_view
-   
     
-    V_f_list = [0.01, 0.015, 0.02, 0.025, 0.03]
-    for i, V_fi in enumerate( V_f_list ):
-        reinfSF.V_f = V_fi
-        CB = open_CB( reinf1, reinfSF )
-        scm_view = open_ini( CB )
-        os.chdir( 'Multiple_Cracking/R1' )
-        if os.path.isdir( np.str( V_fi ) ):
-            pass
-        else: os.mkdir( np.str( V_fi ) )
-        os.chdir( np.str( V_fi ) )
-        if os.path.isdir( 'InterpolatorData' ):
-            pass
-        else:os.mkdir( 'InterpolatorData' )
-        # try:
-        scm_view.model.evaluate()
-        scm_view.save_to_file()
-        # except:
-        #    print 'error in eval'
-        #    os.chdir( os.pardir )
-        os.chdir( os.pardir )
-        os.chdir( os.pardir )
-        del scm_view
-        del CB
-        print 'global status:', i + 1, 'of', len( V_f_list ), 'done'
-
+    V_f_list = [0.000001, 0.005, 0.01, .015, 0.02, 0.025, 0.03]
+    reinf_tex_list = [tex_carbonfibers_real, tex_glas]
+    reinf_sf_list = [sf_steel, sf_polyethylen, sf_glas]
+    os.chdir( 'Multiple_Cracking' )
+    os.mkdir( 'all' )
+    os.chdir( 'all' )
+    distr3D = RV( 'sin2x', loc = 0., scale = 1. )
+    distr2D = RV( 'uniform', loc = 0., scale = pi / 2. )
+    distr_ls = [distr2D, distr3D]
+    for distr in distr_ls: 
+        os.mkdir( distr.type )
+        os.chdir( distr.type )
+        for reinf_tex in reinf_tex_list:
+            os.mkdir( reinf_tex.label )
+            os.chdir( reinf_tex.label )
+            for reinf_sf in reinf_sf_list:
+                os.mkdir( reinf_sf.label )
+                os.chdir( reinf_sf.label )
+                reinfSF = reinf_sf
+                reinfTEX = reinf_tex
+                for i, V_fi in enumerate( V_f_list ):
+                    reinfSF.V_f = V_fi
+                    reinfSF.phi = distr
+                    CB = open_CB( reinfTEX, reinfSF )
+                    scm_view = open_ini( CB )
+                    if os.path.isdir( np.str( V_fi ) ):
+                        pass
+                    else: os.mkdir( np.str( V_fi ) )
+                    os.chdir( np.str( V_fi ) )
+                    if os.path.isdir( 'InterpolatorData' ):
+                        pass
+                    else:os.mkdir( 'InterpolatorData' )
+                    # try:
+                    scm_view.model.evaluate()
+                    scm_view.save_to_file()
+                    # except:
+                    #    print 'error in eval'
+                    #    os.chdir( os.pardir )
+                    os.chdir( os.pardir )
+                    del scm_view
+                    del CB
+                    print 'global status:', i + 1, 'of', len( V_f_list ), 'done' 
+                os.chdir( os.pardir )
+            os.chdir( os.pardir ) 
+        os.chdir( os.pardir ) 
         
     
         
