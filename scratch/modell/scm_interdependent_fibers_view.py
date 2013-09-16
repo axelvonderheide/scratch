@@ -151,28 +151,29 @@ if __name__ == '__main__':
                                 distribution = 'Weibull'
                                )
 
-    tex_carbonfibers_soft = ContinuousFibers( r = 0.0035,
-                          tau = RV( 'weibull_min', loc = 0.007, shape = 1., scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
-                          V_f = 0.02,
-                          E_f = 240e3,
-                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0017 ),
-                          label = 'TEXCarbon_soft' )
-    
-    tex_carbonfibers_real = ContinuousFibers( r = 0.0035,
-                          tau = RV( 'weibull_min', loc = 0.006, shape = .26, scale = .03 ),
-                          V_f = 0.011,
-                          E_f = 240e3,
-                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
-                          label = 'TEXCarbon_real' )
-    
-    tex_glas = ContinuousFibers( r = 0.0095,
-                          tau = RV( 'weibull_min', loc = .011, shape = 0.2, scale = 0.019 ),
-                          V_f = 0.011,
-                          E_f = 72e3,
-                          xi = WeibullFibers( shape = 4.65, sV0 = 1.92e-3 ),
-                          label = 'TEXGlas' )
     
 
+    
+    # tex_carbonfibers_real = ContinuousFibers( r = 0.0035,
+    #                      tau = RV( 'weibull_min', loc = 0.006, shape = .26, scale = .03 ),
+    #                      V_f = 0.011,
+    #                      E_f = 240e3,
+    #                      xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
+    #                      label = 'TEXCarbon_real' )
+    
+    tex_glas = ContinuousFibers( r = 0.0095,
+                          tau = RV( 'weibull_min', loc = .01, shape = 0.23, scale = 0.01 ),
+                          V_f = 0.011,
+                          E_f = 72e3,
+                          xi = WeibullFibers( shape = 4.5, sV0 = 1.856e-3 ),
+                          label = 'TEXGlas' )
+    
+    tex_carbonfibers = ContinuousFibers( r = 0.0035,
+                          tau = RV( 'weibull_min', loc = 0.006, shape = .23, scale = .018 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
+                          V_f = 0.02,
+                          E_f = 240e3,
+                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0026 ),
+                          label = 'TEXCarbon' )
      
     sf_steel = ShortFibers( r = 0.3 ,
                           tau = 1.76,
@@ -194,8 +195,8 @@ if __name__ == '__main__':
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
                           label = 'SFPolyethylen' )
     
-    sf_glas = ShortFibers( r = 0.0095,
-                          tau = 1.,
+    sf_glas = ShortFibers( r = 0.01,
+                          tau = .53,
                           lf = 10. ,
                           snub = 0.7,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),
@@ -212,8 +213,8 @@ if __name__ == '__main__':
     def open_ini( CB_model ):
         scm = SCM( length = length,
                   nx = nx,
-                  n_w_interp = 40,
-                  n_BC_interp = 8,
+                  n_w_interp = 20,
+                  n_BC_interp = 3,
                   n_x_interp = 400,
                   piees = False,
                   piers = False,
@@ -225,15 +226,15 @@ if __name__ == '__main__':
         scm_view = SCMView( model = scm )
         return scm_view
     
-    V_f_list = [0.000001, 0.005, 0.01, .015, 0.02, 0.025, 0.03]
-    reinf_tex_list = [tex_carbonfibers_real, tex_glas]
-    reinf_sf_list = [sf_steel, sf_polyethylen, sf_glas]
+    V_f_list = [ 0.01]  # , 0.01, .015, 0.02, 0.025, 0.03]
+    reinf_tex_list = [tex_carbonfibers]
+    reinf_sf_list = [sf_steel]
     os.chdir( 'Multiple_Cracking' )
     os.mkdir( 'all' )
     os.chdir( 'all' )
     distr3D = RV( 'sin2x', loc = 0., scale = 1. )
     distr2D = RV( 'uniform', loc = 0., scale = pi / 2. )
-    distr_ls = [distr2D, distr3D]
+    distr_ls = [distr3D, distr2D]
     for distr in distr_ls: 
         os.mkdir( distr.type )
         os.chdir( distr.type )
