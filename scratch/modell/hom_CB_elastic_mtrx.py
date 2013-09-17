@@ -199,11 +199,12 @@ class CompositeCrackBridge( HasTraits ):
         methods, masks = self.sorted_xi_cdf
         for i, method in enumerate( methods ):
             if method.__name__ == 'weibull_fibers_cdf':
-                Pf += method( epsy * masks[i], self.sorted_depsf,
-                             x_short, x_long, self.sorted_r )
+                Pf[masks[i]] += method( epsy[masks[i]], self.sorted_depsf[masks[i]],
+                             x_short[masks[i]], x_long[masks[i]], self.sorted_r[masks[i]] )
             else:
-                Pf += method( epsy * masks[i] )
+                Pf[masks[i]] += method( epsy[masks[i]] )
                 # print 'test', method( epsy * masks[i] ), epsy * masks[i]
+                
         return Pf
     
     # ##
@@ -426,7 +427,7 @@ class CompositeCrackBridge( HasTraits ):
         epsf0_lst = []
         l_ez = self.sorted_l_ez[self.sf_mask]
         depsf = self.sorted_depsf[self.sf_mask]
-        epsf0_sf = epsf0_all[self.sf_mask]
+        # epsf0_sf = epsf0_all[self.sf_mask]
         p_arr = 1 - a / l_ez
         half = np.nonzero( self._x_arr == 0 )[0][0]
         emipt = interp1d( self._x_arr[half:], self._epsm_arr[half:], fill_value = self._epsm_arr[-1] , bounds_error = False )
@@ -452,7 +453,7 @@ class CompositeCrackBridge( HasTraits ):
                     # epsf0_lst.append( p *epsf0_sf[i] ) + ( 1 - p ) * epsf_po )
         return np.array( epsf0_lst )
 
-    print_all = Bool( False )
+    print_all = Bool( True )
     if 0 == 0:
         def profile( self, iter_damage, Lmin, Lmax ):
             # matrix strain derivative with resp. to z as a function of T
@@ -660,7 +661,7 @@ class CompositeCrackBridge( HasTraits ):
 
     _epsf0_arr = Array
     def __epsf0_arr_default( self ):
-        return np.repeat( 1e-10, len( self.sorted_depsf ) )
+        return np.repeat( 0, len( self.sorted_depsf ) )
     
     
     def set_sfarr_to_defaults( self ):
@@ -681,7 +682,7 @@ class CompositeCrackBridge( HasTraits ):
             damage = np.zeros_like( self.sorted_depsf[self.c_mask] )
             self._x_arr = np.hstack( ( np.repeat( self.Ll, len( self.sorted_depsf ) ), 0, np.repeat( self.Lr, len( self.sorted_depsf ) ) ) )
             self._epsm_arr = np.array( np.repeat( 1e-6, 1 + 2 * len( self.sorted_depsf ) ) )
-            self._epsf0_arr = np.repeat( 1e-6, len( self.sorted_depsf ) )
+            self._epsf0_arr = np.repeat( 0, len( self.sorted_depsf ) )
             # self.E_mtrx = self._E_mtrx_default()
         else:
             ff = t.clock()
@@ -705,33 +706,54 @@ class CompositeCrackBridge( HasTraits ):
     
 if __name__ == '__main__':
     from matplotlib import pyplot as plt
-    reinf1 = ContinuousFibers( r = 0.0035,
-                          tau = RV( 'weibull_min', loc = 0.006, shape = 1, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
-                          V_f = 0.02,
-                          E_f = 240e3,
-                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0017 ),
-                          n_int = 100,
-                          label = 'carbon' )
 
-    reinfSF = ShortFibers( r = 0.3 ,
+    
+    tex_glas = ContinuousFibers( r = 0.0095,
+                          tau = RV( 'weibull_min', loc = .0014, shape = 0.28, scale = 0.008 ),
+                          V_f = 0.011,
+                          E_f = 72e3,
+                          xi = WeibullFibers( shape = 4.5, sV0 = 1.856e-3 ),
+                          label = 'TEXGlas' )
+     
+    sf_steel = ShortFibers( r = 0.3 ,
                           tau = 1.76,
                           lf = 17.,
                           snub = .03,
                           phi = RV( 'sin2x', loc = 0., scale = 1. ),  # RV( 'uniform', loc = 0., scale = 1e-12 ),
                           V_f = 0.01,
                           E_f = 200e3,
+                          n_int = 500,
                           xi = np.infty,  # WeibullFibers( shape = 1000., scale = 1000 ),
+                          label = 'SFSteel' )
+
+    
+    tex_carbonfibers = ContinuousFibers( r = 0.0035,
+                          tau = RV( 'weibull_min', loc = 0.01, shape = 5., scale = .004 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),  # RV( 'uniform', loc = 0.5, scale = 1.5 ),  # RV( 'weibull_min', loc = 0.006, shape = .23, scale = .03 ),
+                          V_f = 0.02,
+                          E_f = 240e3,
                           n_int = 100,
-                          label = 'Short Fibers' )
+                          xi = WeibullFibers( shape = 5.0, sV0 = 0.0024 ) )
+
+    sf_glas = ShortFibers( r = 9.5 * 1e-3,
+                          tau = .5,
+                          lf = 10. ,
+                          snub = 0.7,
+                          phi = RV( 'sin2x', loc = 0., scale = 1. ),
+                          V_f = 0.01,
+                          E_f = 72e3,
+                          n_int = 50,
+                          xi = np.infty,
+                          label = 'SFGlas' )
     
     ccb = CompositeCrackBridge( E_m = 25e3,
-                                 reinforcement_lst = [reinfSF, reinf1],  # , reinf1],
-                                 Ll = 4.,
-                                 Lr = 200.0,
-                                 w = .008003 )
+                                 reinforcement_lst = [tex_carbonfibers, sf_glas],  # , reinf1],
+                                 Ll = 32.0379647066,
+                                 Lr = 101.754406335,
+                                 w = 1 )
 
     ccb.damage
     sigma = np.sum( ccb._epsf0_arr * ccb.Kf * ( 1. - ccb.damage ) )
+    print sigma
     # show_options( 'root', 'krylov' )
     # print ( 1. - ccb.damage )
     # print ccb.damage
