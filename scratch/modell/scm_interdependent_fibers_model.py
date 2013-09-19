@@ -309,7 +309,6 @@ class SCM( HasTraits ):
                 plt.ylim( 0 )
                 plt.show()
             if float( crack_position ) == last_pos:
-                print last_pos
                 raise ValueError( '''got stuck in loop,
                 try to adapt x, w, BC ranges''' )
             last_pos = float( crack_position )
